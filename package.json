@@ -4,7 +4,7 @@
   "description": "Handles API requests for Write-to-Speak Demo App",
   "main": "server.js",
   "scripts": {
-    "test": "mocha --exit",
+    "test": "mocha --recursive --exit",
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
@@ -22,8 +22,15 @@
   "author": "Margaret Blauvelt",
   "license": "GPL-3.0-or-later",
   "dependencies": {
+    "bcrypt": "^3.0.0",
     "body-parser": "^1.18.3",
     "express": "^4.16.3",
     "mongoose": "^5.1.5"
+  },
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "chai-http": "^4.0.0",
+    "faker": "^4.1.0",
+    "mocha": "^5.2.0"
   }
 }

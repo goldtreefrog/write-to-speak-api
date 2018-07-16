@@ -9,3 +9,7 @@ const snippetSchema = mongoose.Schema({
   snippetOrder: { type: Number, required: true },
   snippetText: { type: String, required: true, trim: true }
 });
+
+const Snippet = mongoose.model("Snippet", snippetSchema);
+
+module.exports = { Snippet };

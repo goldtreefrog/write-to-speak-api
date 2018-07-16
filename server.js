@@ -5,33 +5,49 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const { DATABASE_URL, PORT } = require("./config");
+const logRequest = require("./log-request"); // Log requests
+const router = require("./router/router");
+//
 // Make Mongoose use ES6 promises rather than Mongoose's own
 mongoose.Promise = global.Promise;
 
 const app = express();
 
+// Log all requests
+app.all("/", logRequest);
+
+app.use("/", router);
 app.use(bodyParser.json());
 
 // let server = app.listen(PORT, () => {
 //   console.log(`Your app is listening on port ${PORT}`);
 // });
 
+// closeServer needs access to a server object, but that only
+// gets created when `runServer` runs, so we declare `server` here
+// and then assign a value to it in run
+let server;
+
 // this function connects to our database, then starts the server
 function runServer(databaseUrl, port = PORT) {
   return new Promise((resolve, reject) => {
-    mongoose.connect(databaseUrl, err => {
-      if (err) {
-        return reject(err);
+    mongoose.connect(
+      databaseUrl,
+      err => {
+        if (err) {
+          // console.log("OMG! Connection error: ", err);
+          return reject(err);
+        }
+        server = app
+          .listen(port, () => {
+            console.log(`Your gorgeous app is listening on port ${port}`);
+            resolve();
+          })
+          .on("error", err => {
+            reject(err);
+          });
       }
-      server = app
-        .listen(port, () => {
-          console.log(`Your app is listening on port ${port}`);
-          resolve();
-        })
-        .on("error", err => {
-          reject(err);
-        });
-    });
+    );
   });
 }
 
