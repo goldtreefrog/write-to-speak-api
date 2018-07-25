@@ -38,9 +38,10 @@ function runServer(databaseUrl, port = PORT) {
           // console.log("OMG! Connection error: ", err);
           return reject(err);
         }
+        let now = new Date();
         server = app
           .listen(port, () => {
-            console.log(`Your gorgeous app is listening on port ${port}`);
+            console.log(`Your gorgeous app is listening on port ${port} on ${now}`);
             resolve();
           })
           .on("error", err => {
