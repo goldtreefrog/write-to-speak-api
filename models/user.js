@@ -17,29 +17,25 @@ const registeredUserSchema = mongoose.Schema(
   }
 );
 
-//thinkful
+// For just name & email
 registeredUserSchema.methods.serialize = function() {
   return {
+    _id: this._id || "",
     email: this.email || "",
     firstName: this.firstName || "",
-    lastName: this.lastName || ""
+    lastName: this.lastName || "",
+    createdAt: this.createdAt,
+    updatedAt: this.updatedAt
   };
 };
+
 registeredUserSchema.methods.validatePassword = function(password) {
-  console.log("validating password");
   return bcrypt.compare(password, this.password);
 };
 
 registeredUserSchema.statics.hashPassword = function(password) {
-  console.log("hashing password");
   return bcrypt.hash(password, 12);
 };
-
-// complete react fullstack course
-// registeredUserSchema.methods.generateToken = function(callback) {
-//   const user = this;
-//   const token = jwt.sign(registeredUser._id.toHexString());
-// };
 
 const RegisteredUser = mongoose.model("RegisteredUser", registeredUserSchema);
 

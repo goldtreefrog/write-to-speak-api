@@ -4,18 +4,16 @@ const chai = require("chai");
 const chaiHttp = require("chai-Http");
 const faker = require("faker");
 const mongoose = require("mongoose");
-
-// make the expect syntax available throughout this module
-const expect = chai.expect;
-
-const { Snippet } = require("./../models/snippet.js");
 const { RegisteredUser } = require("./../models/user.js");
 const { app, runServer, closeServer } = require("../server");
 const { TEST_DATABASE_URL } = require("../config");
 
+// make the expect syntax available throughout this module
+const expect = chai.expect;
+
 chai.use(chaiHttp);
 
-// put randomish documents in db for tests.
+// put randomish documents in db for tests. Eventually I will write a test which actually uses this. I had some that I took out (and saved locally), because we do not want anyone to see a list of registered user names and email addresses unless that person is an administrator, and we have not set up an administrator account.
 // use the Faker library to automatically
 // generate placeholder values
 function seedRegisteredUserData() {
@@ -26,7 +24,7 @@ function seedRegisteredUserData() {
     seedData.push(generateRegisteredUserData());
   }
   // this will return a promise
-  console.log("seedDate: ", seedData);
+  // console.log("seedData: ", seedData);
   return RegisteredUser.insertMany(seedData);
 }
 
@@ -34,21 +32,30 @@ function seedRegisteredUserData() {
 // can be used to generate seed data for db
 // or request.body data
 function generateRegisteredUserData() {
-  // return {
-  //   firstName: faker.name.findName().firstName,
-  //   lastName: faker.name.findName().lastName,
-  //   email: faker.internet.email(),
-  //   password: faker.internet.password(),
-  //   createdAt: "",
-  //   updatedAt: ""
-  // };
   return {
-    firstName: "Mary",
-    lastName: "Bacon",
-    email: "mary.bacon@pork.edu",
-    password: "boguspassword1234%$#@!",
+    firstName: faker.name.firstName(),
+    lastName: faker.name.lastName(),
+    email: faker.internet.email(),
+    password: faker.internet.password(),
     createdAt: "",
     updatedAt: ""
+  };
+}
+
+function seedSnippetsData() {
+  console.info("seeding Snippets data");
+  const seedData = [];
+  for (let i = 0; i < 20; i++) {
+    seedData.push(generateSnippetsData());
+  }
+}
+
+function generateSnippetsData() {
+  return {
+    owner: generateOwner(),
+    category: faker.lorem.word(),
+    snippetOrder: { type: Number, required: true },
+    snippetText: { type: String, required: true, trim: true }
   };
 }
 
@@ -57,7 +64,7 @@ function generateRegisteredUserData() {
 // before the next test.
 function tearDownDb() {
   console.warn("Deleting database");
-  // return mongoose.connection.dropDatabase();
+  return mongoose.connection.dropDatabase();
 }
 
 describe("Write to Speak API resource", function() {
@@ -71,11 +78,20 @@ describe("Write to Speak API resource", function() {
   });
 
   beforeEach(function() {
-    return seedRegisteredUserData();
+    // UNCOMMENT!??
+    //   return seedRegisteredUserData().catch(err => {
+    //     console.log(err);
+    //   });
+    return;
   });
 
   afterEach(function() {
-    return tearDownDb();
+    //  Help?
+    console.log("Inside afterEach, in which I should tear down the db, except if I actually do so I get a 'Timeout of 2000ms exceeded' message.");
+    // return tearDownDb().catch(err => {
+    //   console.log(err);
+    // });
+    return;
   });
 
   after(function() {
@@ -83,76 +99,98 @@ describe("Write to Speak API resource", function() {
   });
 
   // Tests in nested `describe` blocks.
-  describe("GET endpoint", function() {
-    it("should return all existing registered users", function() {
-      // strategy:
-      //    1. get back all registered users returned by GET request to `/`
-      //    2. prove res has right status, data type
-      //    3. prove the number of registered users we got back is equal to number
-      //       in db.
-      //
-      // need to change and access `res` across `.then()` calls below,
-      // so declare it here and modify in place
-      console.log("Inside test should return all existing registered users");
-      let res;
-      return chai
+  describe("Add user", function() {
+    it("should add a user", function() {
+      let sendUser = {
+        firstName: faker.name.firstName(),
+        lastName: faker.name.lastName(),
+        email: faker.internet.email(),
+        password: faker.internet.password()
+      };
+      // return chai
+      let myChai = chai
         .request(app)
-        .get("/registered-users")
-        .then(function(_res) {
-          // so subsequent .then blocks can access response object
-          res = _res;
-          console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ");
-          console.log(res.body.registeredUsers);
-          console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ");
-          expect(res).to.have.status(200);
-          // otherwise our db seeding didn't work
-          expect(res.body.registeredUsers).to.have.length.of.at.least(1);
-          return RegisteredUser.count();
+        .post("/add-user")
+        .send(sendUser)
+        .then(function(res) {
+          console.log("Just added user. First response: ", res.body);
+          expect(res).to.have.status(201);
+          expect(res.body).to.be.a("object");
+          expect(res.body).to.include.keys("_id", "firstName", "lastName", "email", "createdAt", "updatedAt");
+          return res;
         })
-        .then(function(count) {
-          console.log("*******************Count: ");
-          console.log(count);
-          expect(res.body.registeredUsers).to.have.length(count);
+        .catch(error => {
+          console.log("Got error: ", error);
+        })
+        .then(res => {
+          let createdAt = new Date(res.body.createdAt);
+          let updatedAt = new Date(res.body.updatedAt);
+          expect(res.body.email).to.equal(sendUser.email);
+          expect(res.body.firstName).to.equal(sendUser.firstName);
+          expect(res.body.lastName).to.equal(sendUser.lastName);
+          expect(createdAt).to.be.a("date");
+          expect(createdAt).to.be.lte(updatedAt);
+          console.log("Added a user: All is as expected.");
+          return res.body._id;
+        })
+        .catch(error => {
+          console.log("Got error: ", error);
+        })
+        .then(res => {
+          console.log("Going to find the user we just added.", res);
+          return RegisteredUser.findOne({ _id: res });
+        })
+        .then(registeredUser => {
+          expect(registeredUser).to.not.be.null;
+          expect(registeredUser.firstName).to.equal(sendUser.firstName);
+          expect(registeredUser.lastName).to.equal(sendUser.lastName);
+          expect(registeredUser.email).to.equal(sendUser.email);
+          expect(registeredUser.password.length).to.be.gt(sendUser.password.length);
+          console.log("We found the user. Now we will validate the password.");
+          let match = registeredUser.validatePassword(sendUser.password);
+          console.log(match);
+          return match;
+        })
+        .then(passwordValidated => {
+          console.log("We checked the password. ", passwordValidated);
+          expect(passwordValidated).to.be.true;
         });
     });
+  });
 
-    it("should return registered users with right fields", function() {
-      // Strategy: Get back all creature sightingss, and ensure they have expected keys
-
-      let resUser;
-      return chai
+  describe("Check Data Integrity", function() {
+    it("should not add record without an email", function() {
+      let sendUser = {
+        firstName: faker.name.firstName(),
+        lastName: faker.name.lastName(),
+        password: faker.internet.password()
+      };
+      console.log("!!!!! Test return error if no email: Going to post user: ", sendUser);
+      chai
         .request(app)
-        .get("/registered-users")
-        .then(function(res) {
-          expect(res).to.have.status(200);
-          expect(res).to.be.json;
-          expect(res.body.registeredUsers).to.be.a("array");
-          expect(res.body.registeredUsers).to.have.length.of.at.least(1);
-
-          // res.body
-          res.body.registeredUsers.forEach(function(registeredUser) {
-            expect(registeredUser).to.be.a("object");
-            expect(registeredUser).to.include.keys("_id", "firstName", "lastName", "email", "password", "createdAt", "updatedAt");
-          });
-          // .catch(err => {
-          //   console.log(err);
-          // });
-          resUser = res.body.registeredUsers[0];
-          return RegisteredUser.findById(resUser._id);
+        .post("/add-user")
+        .send(sendUser)
+        .catch(error => {
+          console.log("Got error (yay!): ", error);
+          error.should.be.an("error").and.not.be.null;
+        });
+    });
+    it("should not add a record with both email and password missing", () => {
+      let sendUser = {
+        firstName: faker.name.firstName(),
+        lastName: faker.name.lastName()
+      };
+      console.log("! ! Test should return error if neither email nor password: Going to post user: ", sendUser);
+      chai
+        .request(app)
+        .post("/add-user")
+        .send(sendUser)
+        .then(res => {
+          console.log("Not a chai error but: ", res.body);
         })
-        .then(function(registeredUser) {
-          console.log("*******************!!!!!!!!!!!************");
-          console.log(registeredUser);
-          // firstName: faker.name.findName().firstName,
-          // lastName: faker.name.findName().lastName,
-          // email: faker.internet.email(),
-          // password: faker.internet.password()
-
-          expect(resUser._id).to.equal(registeredUser._id.toString());
-          expect(resUser.firstName).to.equal(registeredUser.firstName);
-          expect(resUser.lastName).to.equal(registeredUser.lastName);
-          expect(resUser.email).to.equal(registeredUser.email);
-          expect(resUser.password).to.equal(registeredUser.password);
+        .catch(error => {
+          console.log("Got error (yay!): ", error);
+          error.should.be.an("error").and.not.be.null;
         });
     });
   });

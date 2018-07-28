@@ -19,10 +19,6 @@ app.all("/", logRequest);
 app.use("/", router);
 app.use(bodyParser.json());
 
-// let server = app.listen(PORT, () => {
-//   console.log(`Your app is listening on port ${PORT}`);
-// });
-
 // closeServer needs access to a server object, but that only
 // gets created when `runServer` runs, so we declare `server` here
 // and then assign a value to it in run
@@ -35,7 +31,6 @@ function runServer(databaseUrl, port = PORT) {
       databaseUrl,
       err => {
         if (err) {
-          // console.log("OMG! Connection error: ", err);
           return reject(err);
         }
         let now = new Date();

@@ -8,27 +8,38 @@ const jsonParser = bodyParser.json();
 
 const { RegisteredUser } = require("./../models/user");
 
+function getRequiredFields() {
+  // The value is the user-friendly value we pass back, if we were going to do it that way, but here we have no reason to do so because we own front and back ends but just in case...
+  return {
+    email: "Email",
+    password: "Password"
+  };
+}
+
 function checkForBadData(body) {
-  //   const requiredFields = getRequiredFields();
-  //
-  let message = "OK";
-  //
-  //   for (var k in requiredFields) {
-  //     if (requiredFields.hasOwnProperty(k)) {
-  //       if (!(k in req.body)) {
-  //         message = `Missing \`${k}\` in request body`;
-  //       } else {
-  //         if (req.body[k].trim() === "") {
-  //           message += requiredFields[k] + ", ";
-  //         }
-  //       }
-  //     }
-  //   }
-  //
-  //   if (message > "") {
-  //     message = message.slice(0, -2); // remove last comma and space
-  //     message = "Please fill in required fields: " + message;
-  //   }
+  const requiredFields = getRequiredFields();
+  console.log(requiredFields);
+  let message = "";
+
+  for (var k in requiredFields) {
+    if (requiredFields.hasOwnProperty(k)) {
+      if (!(k in body)) {
+        console.log("missing field: ", requiredFields[k]);
+        message += requiredFields[k] + ", ";
+      } else {
+        if (body[k].trim() === "") {
+          console.log("blank field: ", requiredFields[k]);
+          message += requiredFields[k] + ", ";
+        }
+      }
+    }
+  }
+
+  if (message > "") {
+    message = message.slice(0, -2); // remove last comma and space
+    // message = "Please correct: " + message;
+    message = `Please correct: Required field(s) - ${message} - is(/are) missing from request body.`;
+  }
   return message;
 }
 
@@ -36,12 +47,13 @@ function checkForBadData(body) {
 router.post("/add-user", jsonParser, (req, res) => {
   console.log("inside /add-user route with req: ", req.body);
   let message = checkForBadData(req.body);
-  if (!(message === "OK")) {
+  if (!(message === "")) {
+    console.log("Error message returned from checkForBadData: ", message);
     return res.status(400).send(message);
   }
 
   let { firstName = "", lastName = "", email, password } = req.body;
-  console.log("Whatever: ", firstName, lastName, email, password);
+  console.log("Request fields: ", firstName, lastName, email, password);
 
   return RegisteredUser.find({ email })
     .count()
@@ -61,7 +73,7 @@ router.post("/add-user", jsonParser, (req, res) => {
     })
     .then(hash => {
       console.log("It was hashed to: ", hash);
-      console.log("Going to use: ", firstName, lastName, email, hash);
+      console.log("In router.js, about to create: ", firstName, lastName, email, hash);
       return RegisteredUser.create({
         firstName,
         lastName,
@@ -71,53 +83,24 @@ router.post("/add-user", jsonParser, (req, res) => {
       });
     })
     .then(registeredUser => {
+      console.log("Message from router.js: So it got created?");
       return res.status(201).json(registeredUser.serialize());
     })
     .catch(err => {
       // Forward validation errors on to the client, otherwise give a 500
       // error because something unexpected has happened but we don't want to expose
       // info about our system to possibly nefarious users
+      console.log("Uh oh!", err);
       if (err.reason === "ValidationError") {
         return res.status(err.code).json(err);
       }
       res.status(500).json({ code: 500, message: "Internal server error" });
     });
-  // });
-  // const item = RegisteredUser.create({
-  //   firstName: req.body.firstName,
-  //   lastName: req.body.lastName,
-  //   email: req.body.email,
-  //   password: req.body.password,
-  //   timestamps: ""
-  // })
-  //   .then(registeredUser => {
-  //     res.status(201).json(registeredUser);
-  //   })
-  //   .catch(function(err) {
-  //     console.error(err);
-  //     res.status(500).json({ message: `Internal server error. Record not created. Error: ${err}` });
-  //   });
 });
-
-// List all registered users (admins only, eventually, if ever)
-// router.get("/registered-users", jsonParser, (req, res) => {
-//   // console.log(req);
-//   const registeredUsers = RegisteredUser.find()
-//     .select(["firstName", "lastName", "email", "createdAt", "updatedAt"])
-//     .then(registeredUsers => {
-//       res.json({ registeredUsers });
-//     })
-//     .catch(err => {
-//       console.log("caught an error: ", err);
-//       res.status(500).json({ message: "Internal server error. Unable to display data." });
-//     });
-//   //   .done();
-//   // console.log(userdudes);
-// });
 
 // home
 router.get("/", jsonParser, (req, res) => {
-  console.log(req.body);
+  // console.log(req.body);
   res.json("Welcome to Write to Speak");
 });
 
