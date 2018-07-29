@@ -6,7 +6,8 @@ const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const { DATABASE_URL, PORT } = require("./config");
 const logRequest = require("./log-request"); // Log requests
-const router = require("./router/router");
+const usersRouter = require("./router/usersRouter");
+const snippetsRouter = require("./router/snippetsRouter");
 //
 // Make Mongoose use ES6 promises rather than Mongoose's own
 mongoose.Promise = global.Promise;
@@ -16,7 +17,8 @@ const app = express();
 // Log all requests
 app.all("/", logRequest);
 
-app.use("/", router);
+app.use("/users/", usersRouter);
+app.use("/snippets/", snippetsRouter);
 app.use(bodyParser.json());
 
 // closeServer needs access to a server object, but that only
