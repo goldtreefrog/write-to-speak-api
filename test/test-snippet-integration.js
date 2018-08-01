@@ -63,7 +63,6 @@ describe("Write to Speak API resource", function() {
     return seedSnippetData().catch(err => {
       console.log(err);
     });
-    // return;
   });
 
   afterEach(function() {
@@ -85,75 +84,90 @@ describe("Write to Speak API resource", function() {
         snippetText: faker.lorem.text(),
         snippetOrder: faker.random.number(1000).toString()
       };
-      return (
-        chai
-          .request(app)
-          .post("/snippets/add-snippet")
-          .send(sendSnippet)
-          // .then(function(res) {
-          .then(res => {
-            expect(res).to.have.status(201);
-            expect(res.body).to.be.a("object");
-            expect(res.body).to.include.keys("_id", "owner", "category", "createdAt", "updatedAt");
-            return res;
-          })
-          .then(res => {
-            let createdAt = new Date(res.body.createdAt);
-            let updatedAt = new Date(res.body.updatedAt);
-            expect(res.body.category).to.equal(sendSnippet.category);
-            expect(res.body.owner).to.equal(sendSnippet.owner);
-            expect(res.body.lastName).to.equal(sendSnippet.lastName);
-            expect(createdAt).to.be.a("date");
-            expect(createdAt).to.be.lte(updatedAt);
-            return res.body._id;
-          })
-          .then(res => {
-            return Snippet.findOne({ _id: res });
-          })
-          .then(snippet => {
-            expect(snippet).to.not.be.null;
-            expect(snippet.owner).to.equal(sendSnippet.owner);
-            expect(snippet.lastName).to.equal(sendSnippet.lastName);
-            expect(snippet.category).to.equal(sendSnippet.category);
-            expect(snippet.snippetText).to.equal(sendSnippet.snippetText);
-            return snippet;
-          })
-      );
+      return chai
+        .request(app)
+        .post("/snippets/add-snippet")
+        .send(sendSnippet)
+        .then(res => {
+          expect(res).to.have.status(201);
+          expect(res.body).to.be.a("object");
+          expect(res.body).to.include.keys("_id", "owner", "category", "createdAt", "updatedAt");
+          return res;
+        })
+        .then(res => {
+          let createdAt = new Date(res.body.createdAt);
+          let updatedAt = new Date(res.body.updatedAt);
+          expect(res.body.category).to.equal(sendSnippet.category);
+          expect(res.body.owner).to.equal(sendSnippet.owner);
+          expect(res.body.lastName).to.equal(sendSnippet.lastName);
+          expect(createdAt).to.be.a("date");
+          expect(createdAt).to.be.lte(updatedAt);
+          return res.body._id;
+        })
+        .then(res => {
+          return Snippet.findOne({ _id: res });
+        })
+        .then(snippet => {
+          expect(snippet).to.not.be.null;
+          expect(snippet.owner).to.equal(sendSnippet.owner);
+          expect(snippet.lastName).to.equal(sendSnippet.lastName);
+          expect(snippet.category).to.equal(sendSnippet.category);
+          expect(snippet.snippetText).to.equal(sendSnippet.snippetText);
+          return snippet;
+        });
     });
   });
 
-  // describe("Check Data Integrity", function() {
-  //   it("should not add record without a category", function() {
-  //     let sendSnippet = {
-  //       owner: faker.name.lastName(),
-  //       snippetText: faker.lorem.text()
-  //     };
-  //     console.log("!!!!! Test return error if no category: Going to post snippet: ", sendSnippet);
-  //     chai
-  //       .request(app)
-  //       .post("/add-snippet")
-  //       .send(sendSnippet)
-  //       .catch(error => {
-  //         console.log("Got error (yay!): ", error);
-  //         error.should.be.an("error").and.not.be.null;
-  //       });
-  //   });
-  //   it("should not add a record with both category and snippetText missing", () => {
-  //     let sendSnippet = {
-  //       owner: faker.name.lastName()
-  //     };
-  //     console.log("! ! Test should return error if neither category nor snippetText: Going to post snippet: ", sendSnippet);
-  //     chai
-  //       .request(app)
-  //       .post("/add-snippet")
-  //       .send(sendSnippet)
-  //       .then(res => {
-  //         console.log("Not a chai error but: ", res.body);
-  //       })
-  //       .catch(error => {
-  //         console.log("Got error (yay!): ", error);
-  //         error.should.be.an("error").and.not.be.null;
-  //       });
-  //   });
-  // });
+  describe("Check Data Integrity", function() {
+    it("should not add record without snippetText", function(done) {
+      let sendSnippet = {
+        owner: faker.name.lastName(),
+        category: faker.hacker.noun(),
+        snippetOrder: faker.random.number(1000).toString()
+      };
+      chai
+        .request(app)
+        .post("/snippets/add-snippet")
+        .send(sendSnippet)
+        .end(function(err, res) {
+          expect(err).to.be.null;
+          expect(res).to.have.status(400);
+          expect(res.body).to.be.deep.equal({});
+          done();
+        });
+    });
+  });
+
+  describe("update Snippet", function() {
+    it("should update snippetText", function() {
+      let updateSnippet = {
+        snippetText: faker.lorem.text()
+      };
+      let foundSnippet = {};
+
+      return Snippet.findOne().then(snippet => {
+        updateSnippet.id = snippet.id;
+        foundSnippet.id = snippet.id;
+        foundSnippet.owner = snippet.owner;
+        foundSnippet.snippetText = snippet.snippetText;
+        foundSnippet.category = snippet.category;
+        return chai
+          .request(app)
+          .put(`/snippets/${snippet.id}`)
+          .send(updateSnippet)
+          .then(res => {
+            expect(res).to.have.status(200);
+            return Snippet.findById(updateSnippet.id);
+          })
+          .then(snippet => {
+            expect(snippet.id).to.equal(foundSnippet.id);
+            expect(snippet.owner).to.equal(foundSnippet.owner);
+            expect(snippet.snippetText).to.equal(updateSnippet.snippetText);
+            expect(snippet.category).to.equal(foundSnippet.category);
+            expect(snippet.createdAt).to.not.be.null;
+            expect(snippet.updatedAt).to.not.be.null;
+          });
+      });
+    });
+  });
 });

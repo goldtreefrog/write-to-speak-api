@@ -8,14 +8,18 @@ const jsonParser = bodyParser.json();
 
 const { Snippet } = require("./../models/snippet");
 
-function getRequiredFields() {
-  // The value is the user-friendly value we pass back, if we were going to do it that way, but here we have no reason to do so because we own front and back ends but just in case...
-  return {
+function getRequiredFields(includeUpdatedAt = false) {
+  // The value is the user-friendly value we pass back, if we were going to do it that way...
+  let requiredFields = {
     owner: "Owner",
     category: "Category",
     snippetOrder: "Snippet Order",
-    snippetText: "Snippet text"
+    snippetText: "Snippet Text"
   };
+  if (includeUpdatedAt) {
+    requiredFields.updatedAt = "Last Updated";
+  }
+  return requiredFields;
 }
 
 function checkForBadData(body) {
@@ -36,7 +40,6 @@ function checkForBadData(body) {
 
   if (message > "") {
     message = message.slice(0, -2); // remove last comma and space
-    // message = "Please correct: " + message;
     message = `Please correct: Required field(s) - ${message} - is(/are) missing from request body.`;
   }
   return message;
@@ -81,6 +84,33 @@ router.post("/add-snippet", jsonParser, (req, res) => {
         return res.status(err.code).json(err);
       }
       res.status(500).json({ code: 500, message: "Internal server error" });
+    });
+});
+
+router.put("/:id", jsonParser, (req, res) => {
+  let message = "";
+  const requiredFields = getRequiredFields(true);
+
+  // Works in ES2016 and later:
+  Object.keys(req.body).forEach(function(key) {
+    if (req.body[key].trim() === "" && key in requiredFields) {
+      message += key + ", ";
+    }
+  });
+
+  if (message.length > 0) {
+    message = "Cannot update. Required fields are missing: " + message;
+    return res.status(400).send(message);
+  }
+
+  return Snippet.findByIdAndUpdate(req.params.id, req.body, { new: true })
+    .then(snippet => {
+      return res.status(200).json(snippet); // 204 means no content
+    })
+    .catch(err => {
+      res.status(500).json({
+        message: `Internal server error. Record not updated. Error: ${err}`
+      });
     });
 });
 

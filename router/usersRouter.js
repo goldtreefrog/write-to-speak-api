@@ -34,7 +34,6 @@ function checkForBadData(body) {
 
   if (message > "") {
     message = message.slice(0, -2); // remove last comma and space
-    // message = "Please correct: " + message;
     message = `Please correct: Required field(s) - ${message} - is(/are) missing from request body.`;
   }
   return message;
@@ -87,7 +86,7 @@ router.post("/add-user", jsonParser, (req, res) => {
     });
 });
 
-// home
+// home, which we will not do anything more with in back end.
 router.get("/", jsonParser, (req, res) => {
   res.json("Welcome to Write to Speak");
 });

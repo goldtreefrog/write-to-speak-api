@@ -8,7 +8,7 @@ const { DATABASE_URL, PORT } = require("./config");
 const logRequest = require("./log-request"); // Log requests
 const usersRouter = require("./router/usersRouter");
 const snippetsRouter = require("./router/snippetsRouter");
-//
+
 // Make Mongoose use ES6 promises rather than Mongoose's own
 mongoose.Promise = global.Promise;
 

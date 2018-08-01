@@ -45,13 +45,12 @@ describe("Write to Speak API resource", function() {
     });
   });
 
-  beforeEach(function() {
-    // Do not use unless you actually want to display masses of user data in the API, which I do not.
-    //   return seedRegisteredUserData().catch(err => {
-    //     console.log(err);
-    //   });
-    return;
-  });
+  // beforeEach(function() {
+  // Do not use unless you actually want to display masses of user data in the API, which I do not.
+  //   return seedRegisteredUserData().catch(err => {
+  //     console.log(err);
+  //   });
+  // });
 
   afterEach(function() {
     return tearDownDb().catch(err => {
@@ -111,31 +110,37 @@ describe("Write to Speak API resource", function() {
   });
 
   describe("Check Data Integrity", function() {
-    it("should not add record without an email", function() {
+    it("should not add record without an email", function(done) {
       let sendUser = {
         firstName: faker.name.firstName(),
         lastName: faker.name.lastName(),
-        password: faker.internet.password()
+        password: faker.internet.password(),
+        createdAt: "",
+        updatedAt: ""
       };
       chai
         .request(app)
         .post("/users/add-user")
         .send(sendUser)
-        .then(res => {
-          expect(res.error).to.have.status(400);
+        .end(function(err, res) {
+          expect(res).to.have.status(400);
           expect(res.body).to.be.deep.equal({});
+          done();
         });
     });
-    it("should not add a record with both email and password missing", () => {
+    it("should not add a record with password missing", () => {
       let sendUser = {
         firstName: faker.name.firstName(),
-        lastName: faker.name.lastName()
+        lastName: faker.name.lastName(),
+        email: faker.internet.email(),
+        createdAt: "",
+        updatedAt: ""
       };
       chai
         .request(app)
         .post("/users/add-user")
         .send(sendUser)
-        .then(res => {
+        .end(function(err, res) {
           expect(res.error).to.have.status(400);
           expect(res.body).to.be.deep.equal({});
         });
