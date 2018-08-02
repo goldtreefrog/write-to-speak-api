@@ -14,25 +14,26 @@ const expect = chai.expect;
 chai.use(chaiHttp);
 
 // put randomish documents in db for tests.
-// use the Faker library to automatically
-// generate placeholder values
-function seedSnippetData() {
+// use the Faker library to automatically generate placeholder values
+function seedSnippetData(owner, nbr) {
   console.info("seeding Snippet data");
   const seedData = [];
+  const iterations = nbr || 4;
 
-  for (let i = 0; i < 4; i++) {
-    seedData.push(generateSnippetData());
+  for (let i = 0; i < iterations; i++) {
+    seedData.push(generateSnippetData(owner));
   }
+  console.log("seedData records: ", seedData.length);
   // this will return a promise
   return Snippet.insertMany(seedData);
 }
 
 // generate an object represnting a registered snippet.
-// can be used to generate seed data for db
-// or request.body data
-function generateSnippetData() {
+// can be used to generate seed data for db or request.body data
+function generateSnippetData(useOwner) {
+  let owner = useOwner || faker.name.lastName();
   return {
-    owner: faker.name.lastName(),
+    owner,
     category: faker.hacker.noun(),
     snippetText: faker.lorem.text(),
     snippetOrder: faker.random.number(),
@@ -55,13 +56,13 @@ describe("Write to Speak API resource", function() {
   // so we return the value returned by these function calls.
   before(function() {
     return runServer(TEST_DATABASE_URL).catch(err => {
-      console.log(err);
+      console.log("Error caught in before function: ", err);
     });
   });
 
   beforeEach(function() {
     return seedSnippetData().catch(err => {
-      console.log(err);
+      console.log("Inside beforeEach, err from seedSnippetData(): ", err);
     });
   });
 
@@ -76,6 +77,45 @@ describe("Write to Speak API resource", function() {
   });
 
   // Tests in nested `describe` blocks.
+  describe("retrieve Snippets", function() {
+    it("should retrieve all snippets for all owners when no owner specified", function() {
+      return chai
+        .request(app)
+        .get("/snippets/all")
+        .then(function(res) {
+          expect(res).to.have.status(200);
+          expect(res.body).to.have.length.gt(0);
+          // return;
+        });
+    });
+
+    it("should retrieve all Snippets for a given owner", function() {
+      let owner = "1234567";
+      seedSnippetData(owner, 10);
+      return (
+        chai
+          .request(app)
+          .get(`/snippets/${owner}`)
+          // .end(function(err, res) {
+          .then(function(res) {
+            expect(res).to.have.status(200);
+            expect(res.body).to.have.length.of.at.least(10);
+            // return;
+          })
+      );
+    });
+
+    it("should not retrieve any snippets for an owner that does not exist", function() {
+      let owner = "1";
+      return chai
+        .request(app)
+        .get(`/snippets/${owner}`)
+        .then(function(res) {
+          expect(res).to.have.status(404);
+        });
+    });
+  });
+
   describe("Add snippet", function() {
     it("should add a snippet", function() {
       let sendSnippet = {
@@ -113,28 +153,29 @@ describe("Write to Speak API resource", function() {
           expect(snippet.lastName).to.equal(sendSnippet.lastName);
           expect(snippet.category).to.equal(sendSnippet.category);
           expect(snippet.snippetText).to.equal(sendSnippet.snippetText);
-          return snippet;
+          // return snippet;
         });
     });
-  });
 
-  describe("Check Data Integrity", function() {
-    it("should not add record without snippetText", function(done) {
+    it("should not add record without snippetText", function() {
       let sendSnippet = {
         owner: faker.name.lastName(),
         category: faker.hacker.noun(),
         snippetOrder: faker.random.number(1000).toString()
       };
-      chai
-        .request(app)
-        .post("/snippets/add-snippet")
-        .send(sendSnippet)
-        .end(function(err, res) {
-          expect(err).to.be.null;
-          expect(res).to.have.status(400);
-          expect(res.body).to.be.deep.equal({});
-          done();
-        });
+      return (
+        chai
+          .request(app)
+          .post("/snippets/add-snippet")
+          .send(sendSnippet)
+          // .end(function(err, res) {
+          .then(function(res) {
+            // expect(err).to.be.null;
+            expect(res).to.have.status(400);
+            expect(res.body).to.be.deep.equal({});
+            // return;
+          })
+      );
     });
   });
 

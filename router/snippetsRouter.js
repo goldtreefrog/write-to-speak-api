@@ -45,6 +45,27 @@ function checkForBadData(body) {
   return message;
 }
 
+// Get snippets for all owners (something only administrators should be able to do...)
+router.get("/all", jsonParser, (req, res) => {
+  // return Snippet.find().then(snippets => {
+  Snippet.find({}).then(snippets => {
+    if (snippets.length < 1) {
+      return res.status(404).send("No snippets found");
+    }
+    return res.status(200).json(snippets);
+  });
+});
+
+// Get snippets for one owner
+router.get("/:owner", jsonParser, (req, res) => {
+  Snippet.find({ owner: req.params.owner }).then(snippets => {
+    if (snippets.length < 1) {
+      return res.status(404).send("No snippets found for this owner");
+    }
+    return res.status(200).json(snippets);
+  });
+});
+
 // Create a snippet
 router.post("/add-snippet", jsonParser, (req, res) => {
   let message = checkForBadData(req.body);
