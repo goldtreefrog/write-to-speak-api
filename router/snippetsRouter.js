@@ -135,4 +135,18 @@ router.put("/:id", jsonParser, (req, res) => {
     });
 });
 
+router.delete("/:id", jsonParser, (req, res) => {
+  let id = req.params.id;
+  console.log(`Delete item ${id}`);
+
+  Snippet.remove({ _id: id })
+    .then(function() {
+      res.status(204).end();
+    })
+    .catch(function(err) {
+      console.error(err);
+      res.status(500).json({ message: `Internal server error. Record not deleted. Error: ${err}` });
+    });
+});
+
 module.exports = router;

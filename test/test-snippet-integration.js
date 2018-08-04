@@ -77,7 +77,7 @@ describe("Write to Speak API resource", function() {
   });
 
   // Tests in nested `describe` blocks.
-  describe("retrieve Snippets", function() {
+  describe("GET endpoint - retrieve Snippets", function() {
     it("should retrieve all snippets for all owners when no owner specified", function() {
       return chai
         .request(app)
@@ -116,7 +116,7 @@ describe("Write to Speak API resource", function() {
     });
   });
 
-  describe("Add snippet", function() {
+  describe("POST endpoint - add snippet", function() {
     it("should add a snippet", function() {
       let sendSnippet = {
         owner: faker.name.lastName(),
@@ -179,7 +179,7 @@ describe("Write to Speak API resource", function() {
     });
   });
 
-  describe("update Snippet", function() {
+  describe("PUT endpoint - update Snippet", function() {
     it("should update snippetText", function() {
       let updateSnippet = {
         snippetText: faker.lorem.text()
@@ -209,6 +209,26 @@ describe("Write to Speak API resource", function() {
             expect(snippet.updatedAt).to.not.be.null;
           });
       });
+    });
+  });
+
+  describe("DELETE endpoint - remove snippet", function() {
+    it("should delete a snippet by id", function() {
+      let snippet;
+
+      // Find any old snippet , then delete it, then verify that it is gone.
+      return Snippet.findOne()
+        .then(function(_snippet) {
+          snippet = _snippet;
+          return chai.request(app).delete(`/snippets/${snippet.id}`);
+        })
+        .then(function(res) {
+          expect(res).to.have.status(204);
+          return Snippet.findById(snippet.id);
+        })
+        .then(function(_snippet) {
+          expect(_snippet).to.be.null;
+        });
     });
   });
 });
