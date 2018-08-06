@@ -1,4 +1,9 @@
-language:   node_js
- node_js:   node
- services:
-     - mongodb
+language:    node_js
+node_js:     node
+services:
+- mongodb
+deploy:
+  provider:  heroku
+  api_key:
+    secure:  Py9qKfyLkdKdZGql+4R8MRiL8k1z6q3gtpcr8jH66n7XRJyD6pK5x01ET3SFPGlXQa7RNKn0pON0x5z1V2kO/jSzT4iKBA+ENRwGYwglt7B4Aqa9VM8tlP0kg+Q0Dg2QnEuljVdiOVSc5PFI9tgGBirgzkp92XqCWi3dweXw853fQWtB2lbypdsEHQPbZPX/1JoL4Nnd56VMuSR0ztmzfzDY5s8WYVaXDf9uszPGzJgHdAKZ0XLQ9FSRXveOApTP7Oh8uGGlSYKTQRCAYguvhn6gMhxP7wDDROJeIX+oZYUbYPSJbUXEMCCfeBxMhBsPgN5XComHehKYLmRkBEx2lCu5lfhyAzPIfeHFDS5bYnc0iX18Fn46eUBHhgyzoxD5lJWSHbmQXAws+KatB9z1MTPI0Ijrmy4KNUNNuGDxGVHohFiocej3zAJV4UkeH1UhtAW/GJ8GkQ3+9wFzocauSZFk5OhdySgFhQCxYxxe2utczOwfQv1jOfet2OG+iGevp936Lm238jSSjA7YjbPtkQfL65PG9WJt+PCZxl1uK8W3K9gHZITnFcGRllDT51uai6pDNgOTI2AOAlJR5vEebo0NEDubIxxXJLbRbFL+umDBdCnFyIxSKIRNniRQapP01Tk72pRYGhWMTwED4NqlwwpDmBRYImi/6EXs+RDQWdY=
+  app:       agile-basin-78905
