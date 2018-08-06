@@ -4,7 +4,7 @@
   "description": "Handles API requests for Write-to-Speak Demo App",
   "main": "server.js",
   "scripts": {
-    "test": "mocha --recursive --timeout 10000 --exit",
+    "test": "nodemon --exec mocha -R min --recursive --timeout 10000 --exit",
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
