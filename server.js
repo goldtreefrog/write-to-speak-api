@@ -29,23 +29,44 @@ let server;
 // this function connects to our database, then starts the server
 function runServer(databaseUrl, port = PORT) {
   return new Promise((resolve, reject) => {
-    mongoose.connect(
-      databaseUrl,
-      err => {
-        if (err) {
+    mongoose
+      .connect(
+        databaseUrl,
+        { useNewUrlParser: true }
+      )
+      .then(
+        () => {
+          let now = new Date();
+          server = app
+            .listen(port, () => {
+              console.log(`Your gorgeous app is listening on port ${port} on ${now}`);
+              resolve();
+            })
+            .on("error", err => {
+              reject(err);
+            });
+        },
+        err => {
           return reject(err);
         }
-        let now = new Date();
-        server = app
-          .listen(port, () => {
-            console.log(`Your gorgeous app is listening on port ${port} on ${now}`);
-            resolve();
-          })
-          .on("error", err => {
-            reject(err);
-          });
-      }
-    );
+      );
+
+    // err => {
+    //   console.log("err ===", err);
+    //   if (err) {
+    //     return reject(err);
+    //   }
+    //   let now = new Date();
+    //   server = app
+    //     .listen(port, () => {
+    //       console.log(`Your gorgeous app is listening on port ${port} on ${now}`);
+    //       resolve();
+    //     })
+    //     .on("error", err => {
+    //       reject(err);
+    //     });
+    // }
+    // );
   });
 }
 
