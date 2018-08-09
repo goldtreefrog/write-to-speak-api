@@ -49,7 +49,7 @@ router.post("/add-user", jsonParser, (req, res) => {
   let { firstName = "", lastName = "", email, password } = req.body;
 
   return RegisteredUser.find({ email })
-    .count()
+    .countDocuments()
     .then(count => {
       if (count > 0) {
         // User already exists

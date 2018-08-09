@@ -1,6 +1,7 @@
 "use strict";
 
 const mongoose = require("mongoose");
+const { SnippetSchema } = require("./snippet.js");
 const bcrypt = require("bcrypt");
 
 // Schema for a user
@@ -9,7 +10,8 @@ const registeredUserSchema = mongoose.Schema(
     firstName: { type: String, trim: true },
     lastName: { type: String, trim: true },
     email: { type: String, required: true, trim: true, unique: 1, minlength: 5 },
-    password: { type: String, required: true, trim: true, minlength: 6, maxlength: 72 }
+    password: { type: String, required: true, trim: true, minlength: 6, maxlength: 72 },
+    snippets: [SnippetSchema]
   },
   {
     timestamps: true

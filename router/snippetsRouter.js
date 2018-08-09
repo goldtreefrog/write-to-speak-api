@@ -6,6 +6,7 @@ const router = express.Router();
 const bodyParser = require("body-parser");
 const jsonParser = bodyParser.json();
 
+const { RegisteredUser } = require("./../models/user");
 const { Snippet } = require("./../models/snippet");
 
 function getRequiredFields(includeUpdatedAt = false) {
@@ -47,23 +48,43 @@ function checkForBadData(body) {
 
 // Get snippets for all owners (something only administrators should be able to do...)
 router.get("/all", jsonParser, (req, res) => {
-  // return Snippet.find().then(snippets => {
-  Snippet.find({}).then(snippets => {
-    if (snippets.length < 1) {
-      return res.status(404).send("No snippets found");
-    }
-    return res.status(200).json(snippets);
-  });
+  RegisteredUser.find({})
+    .populate("snippets")
+    .then(snippets => {
+      // Snippet.find({}).then(snippets => {
+      console.log("snippets length in get all snippets: ", snippets.length);
+      if (snippets.length < 1) {
+        return res.status(404).send("No snippets found");
+      }
+      return res.status(200).json(snippets);
+    });
 });
 
 // Get snippets for one owner
-router.get("/:owner", jsonParser, (req, res) => {
-  Snippet.find({ owner: req.params.owner }).then(snippets => {
-    if (snippets.length < 1) {
-      return res.status(404).send("No snippets found for this owner");
-    }
-    return res.status(200).json(snippets);
-  });
+// router.get("/find/:id", jsonParser, (req, res) => {
+//   CreatureSighting.findOne({ _id: req.params.id })
+//     .then(creatureSightings => {
+//       res.json({ creatureSightings });
+//     })
+
+router.get("/owner/:owner", jsonParser, (req, res) => {
+  // console.log("***!!!req.params.owner: ", req.params.owner);
+  // RegisteredUser.findById(req.params.owner.toString())
+  // let id = req.params.owner;
+  RegisteredUser.findById(req.params.owner)
+    // .populate("snippets")
+    .then(user => {
+      // Snippet.find({ owner: req.params.owner }).then(snippets => {
+      // console.log("****find one user: ", user);
+      if (!user) {
+        return res.status(404).send("Owner does not exist in our system");
+      }
+      if (!user.snippets) {
+        console.log("No snippets? 1");
+        return res.status(404).send("No snippets found for this owner");
+      }
+      return res.status(200).json(user.snippets);
+    });
 });
 
 // Create a snippet
@@ -76,7 +97,7 @@ router.post("/add-snippet", jsonParser, (req, res) => {
   let { owner, category, snippetOrder, snippetText } = req.body;
 
   return Snippet.find({ owner: req.body.owner, category: req.body.category, snippetText: req.body.snippetText })
-    .count()
+    .countDocuments()
     .then(count => {
       if (count > 0) {
         // User already exists

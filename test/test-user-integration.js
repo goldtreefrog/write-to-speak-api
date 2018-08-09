@@ -16,16 +16,16 @@ chai.use(chaiHttp);
 // generate an object representing a registered user.
 // can be used to generate seed data for db
 // or request.body data
-function generateRegisteredUserData() {
-  return {
-    firstName: faker.name.firstName(),
-    lastName: faker.name.lastName(),
-    email: faker.internet.email(),
-    password: faker.internet.password(),
-    createdAt: "",
-    updatedAt: ""
-  };
-}
+// function generateRegisteredUserData() {
+//   return {
+//     firstName: faker.name.firstName(),
+//     lastName: faker.name.lastName(),
+//     email: faker.internet.email(),
+//     password: faker.internet.password(),
+//     createdAt: "",
+//     updatedAt: ""
+//   };
+// }
 
 // Deletes test database.
 // called in `afterEach` block below to ensure data from one test is gone
