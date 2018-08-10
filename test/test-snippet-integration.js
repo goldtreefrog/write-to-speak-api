@@ -76,122 +76,115 @@ describe("Write to Speak API resource", function() {
     });
   });
 
-  // afterEach(function() {
-  //   return tearDownDb().catch(err => {
-  //     console.log(err);
-  //   });
-  // });
+  afterEach(function() {
+    return tearDownDb().catch(err => {
+      console.log(err);
+    });
+  });
 
   after(function() {
     return closeServer();
   });
 
   // Tests in nested `describe` blocks.
+  // Note the way done() is used. Thinkful suggested 'return chai...' so you wouldn't have to call done(), but I concluded the weird 404 errors I got on some tests ONLY when running all tests together was due to the tests running asynchronously. The database was getting dropped before the next test finished. Not good. Works better with done() inside a final .then().
   describe("GET endpoint - retrieve Snippets", function() {
-    it("should retrieve all snippets for all owners when no owner specified", function() {
-      return chai
+    it("should retrieve all snippets for all owners when no owner specified", function(done) {
+      chai
         .request(app)
         .get("/snippets/all")
         .then(function(res) {
           expect(res).to.have.status(200);
           expect(res.body).to.have.length.gt(0);
-          // return;
+        })
+        .then(() => {
+          done();
         });
     });
 
-    it("should retrieve all Snippets for a given owner", function() {
+    it("should retrieve all Snippets for a given owner", function(done) {
       RegisteredUser.findOne({}).then(user => {
-        // console.log("owner found in test: ", user);
-        return (
-          chai
-            .request(app)
-            .get(`/snippets/owner/${user._id}`)
-            // .end(function(err, res) {
-            .then(function(res) {
-              // console.log("~~~~~~~~~~~~~~~~~res.body: ", res.body);
-              // console.log("~ ~  ~  ~  ~  ~  res.status: ", res.status);
-              expect(res).to.have.status(200);
-              expect(res.body).to.have.length.of.at.least(1);
-              // return;
-            })
-        );
+        chai
+          .request(app)
+          .get(`/snippets/owner/${user._id}`)
+          .then(function(res) {
+            expect(res).to.have.status(200);
+            expect(res.body).to.have.length.of.at.least(1);
+          })
+          .then(() => {
+            done();
+          });
       });
     });
 
-    it("should not retrieve any snippets for an owner that does not exist", function() {
+    it("should not retrieve any snippets for an owner that does not exist", function(done) {
       let owner = mongoose.Types.ObjectId("123456789012");
-      return chai
+      chai
         .request(app)
         .get(`/snippets/owner/${owner}`)
         .then(function(res) {
-          // console.log("ooooooooooooooooo_res.status: ", res.status);
           expect(res).to.have.status(404);
+        })
+        .then(() => {
+          done();
         });
     });
   });
 
-  // describe("POST endpoint - add snippet", function() {
-  //   it("should add a snippet", function() {
-  //     let sendSnippet = {
-  //       owner: faker.name.lastName(),
-  //       category: faker.hacker.noun(),
-  //       snippetText: faker.lorem.text(),
-  //       snippetOrder: faker.random.number(1000).toString()
-  //     };
-  //     return chai
-  //       .request(app)
-  //       .post("/snippets/add-snippet")
-  //       .send(sendSnippet)
-  //       .then(res => {
-  //         expect(res).to.have.status(201);
-  //         expect(res.body).to.be.a("object");
-  //         expect(res.body).to.include.keys("_id", "owner", "category", "createdAt", "updatedAt");
-  //         return res;
-  //       })
-  //       .then(res => {
-  //         let createdAt = new Date(res.body.createdAt);
-  //         let updatedAt = new Date(res.body.updatedAt);
-  //         expect(res.body.category).to.equal(sendSnippet.category);
-  //         expect(res.body.owner).to.equal(sendSnippet.owner);
-  //         expect(res.body.lastName).to.equal(sendSnippet.lastName);
-  //         expect(createdAt).to.be.a("date");
-  //         expect(createdAt).to.be.lte(updatedAt);
-  //         return res.body._id;
-  //       })
-  //       .then(res => {
-  //         return Snippet.findOne({ _id: res });
-  //       })
-  //       .then(snippet => {
-  //         expect(snippet).to.not.be.null;
-  //         expect(snippet.owner).to.equal(sendSnippet.owner);
-  //         expect(snippet.lastName).to.equal(sendSnippet.lastName);
-  //         expect(snippet.category).to.equal(sendSnippet.category);
-  //         expect(snippet.snippetText).to.equal(sendSnippet.snippetText);
-  //         // return snippet;
-  //       });
-  //   });
-  //
-  //   it("should not add record without snippetText", function() {
-  //     let sendSnippet = {
-  //       owner: faker.name.lastName(),
-  //       category: faker.hacker.noun(),
-  //       snippetOrder: faker.random.number(1000).toString()
-  //     };
-  //     return (
-  //       chai
-  //         .request(app)
-  //         .post("/snippets/add-snippet")
-  //         .send(sendSnippet)
-  //         // .end(function(err, res) {
-  //         .then(function(res) {
-  //           // expect(err).to.be.null;
-  //           expect(res).to.have.status(400);
-  //           expect(res.body).to.be.deep.equal({});
-  //           // return;
-  //         })
-  //     );
-  //   });
-  // });
+  describe("PUT endpoint - add snippet", function() {
+    it("should add a snippet to an existing user", function(done) {
+      let sendSnippet = {
+        category: faker.hacker.noun(),
+        snippetText: faker.lorem.text(),
+        snippetOrder: faker.random.number(1000).toString()
+      };
+      RegisteredUser.findOne({}).then(user => {
+        let originalSnippetsLength = user.snippets.length;
+        sendSnippet.userId = user._id;
+
+        chai
+          .request(app)
+          .put("/snippets/add-snippet")
+          .send(sendSnippet)
+          .then(res => {
+            return res.body._id;
+          })
+          .then(id => {
+            return RegisteredUser.findById(id);
+          })
+          .then(user => {
+            expect(user).to.not.be.null;
+            if (user) {
+              expect(user.snippets.length).to.equal(originalSnippetsLength + 1);
+            }
+          })
+          .then(() => {
+            done();
+          });
+      });
+    });
+
+    // it("should not add a snippet without snippetText", function() {
+    //   let sendSnippet = {
+    //     owner: faker.name.lastName(),
+    //     category: faker.hacker.noun(),
+    //     snippetOrder: faker.random.number(1000).toString()
+    //   };
+    //   return (
+    //     chai
+    //       .request(app)
+    //       .post("/snippets/add-snippet")
+    //       .send(sendSnippet)
+    //       // .end(function(err, res) {
+    //       .then(function(res) {
+    //         // expect(err).to.be.null;
+    //         expect(res).to.have.status(400);
+    //         expect(res.body).to.be.deep.equal({});
+    //         // return;
+    //       })
+    //   );
+    // });
+  });
   //
   // describe("PUT endpoint - update Snippet", function() {
   //   it("should update snippetText", function() {
