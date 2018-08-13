@@ -1,7 +1,7 @@
 "use strict";
 
 const mongoose = require("mongoose");
-const { SnippetSchema } = require("./snippet.js");
+const { SnippetSchema } = require("./snippetSchema.js");
 const bcrypt = require("bcrypt");
 
 // Schema for a user
