@@ -8,7 +8,7 @@ const bodyParser = require("body-parser");
 const jsonParser = bodyParser.json();
 
 const { RegisteredUser } = require("./../models/user");
-const { Snippet } = require("./../models/snippet");
+const { Snippet } = require("./../models/snippetSchema");
 
 function getRequiredFields(includeUpdatedAt = false) {
   // The value is the user-friendly value we pass back, if we were going to do it that way...
@@ -52,7 +52,6 @@ router.get("/all", jsonParser, (req, res) => {
   RegisteredUser.find({})
     .populate("snippets")
     .then(snippets => {
-      console.log("snippets length in get all snippets: ", snippets.length);
       if (snippets.length < 1) {
         return res.status(404).send("No snippets found");
       }
@@ -94,44 +93,57 @@ router.put("/add-snippet", jsonParser, (req, res) => {
     });
 });
 
-router.put("/:id", jsonParser, (req, res) => {
-  let message = "";
-  const requiredFields = getRequiredFields(true);
+// router.put("/update-snippet", jsonParser, (req, res) => {
+//   let message = "";
+//   // const requiredFields = getRequiredFields(true);
+//
+//   // Works in ES2016 and later:
+//   // Object.keys(req.body).forEach(function(key) {
+//   //   if (req.body[key].trim() === "" && key in requiredFields) {
+//   //     message += key + ", ";
+//   //   }
+//   // });
+//
+//   // if (message.length > 0) {
+//   //   message = "Cannot update. Required fields are missing: " + message;
+//   //   return res.status(400).send(message);
+//   // }
+//   RegisteredUser.findById(req.params.userId).then(user => {
+//     user.Snippets;
+//   });
+//   return RegisteredUser.Snippet.findByIdAndUpdate(req.params.id, req.body, { new: true })
+//     .then(snippet => {
+//       return res.status(200).json(snippet); // 204 means no content
+//     })
+//     .catch(err => {
+//       res.status(500).json({
+//         message: `Internal server error. Record not updated. Error: ${err}`
+//       });
+//     });
+// });
 
-  // Works in ES2016 and later:
-  Object.keys(req.body).forEach(function(key) {
-    if (req.body[key].trim() === "" && key in requiredFields) {
-      message += key + ", ";
-    }
-  });
-
-  if (message.length > 0) {
-    message = "Cannot update. Required fields are missing: " + message;
-    return res.status(400).send(message);
-  }
-
-  return Snippet.findByIdAndUpdate(req.params.id, req.body, { new: true })
-    .then(snippet => {
-      return res.status(200).json(snippet); // 204 means no content
+router.put("/delete-snippet", jsonParser, (req, res) => {
+  console.log("You have arrived.");
+  console.log("req.body: ", req.body);
+  // let userId = req.body.userId;
+  console.log(`Delete item ${req.body.userId}`);
+  // let snippetId = req.body.snippetId;
+  RegisteredUser.findById(req.body.userId)
+    .then(user => {
+      console.log("# $ # $ # $ user: ", user);
+      // inventory.items.pull(req.params.itemSku);
+      user.snippets.pull(req.body.snippetId);
+      console.log("<%%%%></%%%%> user: ", user);
+      user.save();
+    })
+    .then(function() {
+      console.log("Did we save the user or what??");
+      res.status(204).end();
+      console.log("And here we are.");
     })
     .catch(err => {
-      res.status(500).json({
-        message: `Internal server error. Record not updated. Error: ${err}`
-      });
-    });
-});
-
-router.delete("/:id", jsonParser, (req, res) => {
-  let id = req.params.id;
-  console.log(`Delete item ${id}`);
-
-  Snippet.remove({ _id: id })
-    .then(function() {
-      res.status(204).end();
-    })
-    .catch(function(err) {
-      console.error(err);
-      res.status(500).json({ message: `Internal server error. Record not deleted. Error: ${err}` });
+      console.log("Error when tried to remove snippet: ", err);
+      res.status(500).json({ message: "Internal server error. Snippet not deleted." });
     });
 });
 
