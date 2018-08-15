@@ -39,15 +39,11 @@ function seedSnippetData(owner, nbr) {
 
 // generate an object represnting a registered snippet.
 // can be used to generate seed data for db or request.body data
-// function generateSnippetData(useOwner) {
-//   let owner = useOwner || faker.random.number();
 function generateSnippetData() {
   return {
     category: faker.hacker.noun(),
     snippetText: faker.lorem.text(),
     snippetOrder: faker.random.number()
-    // createdAt: "",
-    // updatedAt: ""
   };
 }
 
@@ -201,46 +197,37 @@ describe("Write to Speak API resource", function() {
   });
 
   describe("PUT endpoint - update Snippet", function() {
-    it("should update snippetText", function() {
-      let updateSnippet = {
-        snippetText: faker.lorem.text()
+    it("should update snippetText", function(done) {
+      let updateSnippetTo = {
+        snippetText: "Here is the new text for the updated snippet."
       };
-      let origSnippets = [];
-      // let snippetToChangeId;
+      let objSend = {};
       // Find an existing user for which we will change the first snippet
-      RegisteredUser.findOne({})
-        .then(user => {
-          origSnippets = user.snippets;
-          return origSnippets[0]._id;
-        })
-        .then(id => {
-          console.log("snippetToChange Id: ", id);
-        });
-      //     let foundSnippet = {};
-      //
-      //     return Snippet.findOne().then(snippet => {
-      //       updateSnippet.id = snippet.id;
-      //       foundSnippet.id = snippet.id;
-      //       foundSnippet.owner = snippet.owner;
-      //       foundSnippet.snippetText = snippet.snippetText;
-      //       foundSnippet.category = snippet.category;
-      //       return chai
-      //         .request(app)
-      //         .put(`/snippets/${snippet.id}`)
-      //         .send(updateSnippet)
-      //         .then(res => {
-      //           expect(res).to.have.status(200);
-      //           return Snippet.findById(updateSnippet.id);
-      //         })
-      //         .then(snippet => {
-      //           expect(snippet.id).to.equal(foundSnippet.id);
-      //           expect(snippet.owner).to.equal(foundSnippet.owner);
-      //           expect(snippet.snippetText).to.equal(updateSnippet.snippetText);
-      //           expect(snippet.category).to.equal(foundSnippet.category);
-      //           expect(snippet.createdAt).to.not.be.null;
-      //           expect(snippet.updatedAt).to.not.be.null;
-      //         });
-      //     });
+      RegisteredUser.findOne({}).then(user => {
+        objSend.userId = user._id;
+        objSend.snippetId = user.snippets[0]._id;
+        objSend.snippetCategory = updateSnippetTo.category = user.snippets[0].category;
+        objSend.origText = user.snippets[0].snippetText;
+        objSend.snippet = updateSnippetTo;
+        chai
+          .request(app)
+          .put("/snippets/update-snippet")
+          .send(objSend)
+          .then(res => {
+            expect(res).to.have.status(200);
+
+            let itemText = res.body.map(item => {
+              return item["snippetText"];
+            });
+            expect(itemText).to.include(updateSnippetTo.snippetText);
+
+            let itemCategory = res.body.map(item => {
+              return item["category"];
+            });
+            expect(itemCategory).to.include(updateSnippetTo.category);
+          })
+          .then(() => done());
+      });
     });
     //
     describe("PUT endpoint - remove snippet", function() {
@@ -274,20 +261,35 @@ describe("Write to Speak API resource", function() {
                 .then(() => done());
             });
         });
-        //     let snippet;
-        //
-        //     return Snippet.findOne()
-        //       .then(function(_snippet) {
-        //         snippet = _snippet;
-        //         return chai.request(app).delete(`/snippets/${snippet.id}`);
-        //       })
-        //       .then(function(res) {
-        //         expect(res).to.have.status(204);
-        //         return Snippet.findById(snippet.id);
-        //       })
-        //       .then(function(_snippet) {
-        //         expect(_snippet).to.be.null;
       });
+    });
+  });
+
+  describe("Virtual types", () => {
+    it("Sets snippetCount to correct count", done => {
+      const testUser = new RegisteredUser({
+        firstName: "Mary",
+        lastName: "Poppins",
+        email: "mary@disneyworldincybertestland.com",
+        password: "julieandrews3",
+        category: faker.hacker.noun(),
+        snippetText: faker.lorem.text(),
+        snippetOrder: faker.random.number(),
+        snippets: [
+          { category: "virtualTest", snippetText: "supercalifragilisticexpialidocis", snippetOrder: "1" },
+          { category: "virtualTest", snippetText: "Just a spoon full of sugar makes the medicine go down", snippetOrder: "2" },
+          { category: "virtualTest", snippetText: "feed the birds", snippetOrder: "3" }
+        ],
+        createdAt: "",
+        updatedAt: ""
+      });
+      testUser
+        .save()
+        .then(() => RegisteredUser.findOne({ lastName: "Poppins" }))
+        .then(user => {
+          expect(user.snippetCount).to.equal(testUser.snippets.length);
+        })
+        .then(() => done());
     });
   });
 });
