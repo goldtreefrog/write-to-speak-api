@@ -18,6 +18,11 @@ const registeredUserSchema = mongoose.Schema(
   }
 );
 
+// When creating virtual, must use get(function) rather than ES6 get(()=>) in order to have 'this' refer to the model rather than this whole file.
+registeredUserSchema.virtual("snippetCount").get(function() {
+  return this.snippets.length;
+});
+
 // For just name & email
 registeredUserSchema.methods.serialize = function() {
   return {
