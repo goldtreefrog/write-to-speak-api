@@ -23,6 +23,13 @@ registeredUserSchema.virtual("snippetCount").get(function() {
   return this.snippets.length;
 });
 
+registeredUserSchema.virtual("maxOrder").get(function() {
+  let orderedSnippets = this.snippets.sort(function(a, b) {
+    return b.snippetOrder - a.snippetOrder;
+  });
+  return orderedSnippets[0].snippetOrder;
+});
+
 // For just name & email
 registeredUserSchema.methods.serialize = function() {
   return {

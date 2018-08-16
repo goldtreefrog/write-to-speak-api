@@ -21,11 +21,9 @@ function seedSnippetData(owner, nbr) {
   const iterations = nbr || 4;
 
   for (let i = 0; i < iterations; i++) {
-    // seedData.push(generateSnippetData(owner));
     seedData.push(generateSnippetData());
   }
   // this will return a promise
-  // return Snippet.insertMany(seedData);
   return RegisteredUser.insertMany({
     firstName: faker.name.firstName(),
     lastName: faker.name.lastName(),
@@ -229,7 +227,7 @@ describe("Write to Speak API resource", function() {
           .then(() => done());
       });
     });
-    //
+
     describe("PUT endpoint - remove snippet", function() {
       it("should remove a snippet by snippet id", function(done) {
         // 1. Find any snippets created by beforeEach (which currently creates 4 snippets/user)
@@ -247,7 +245,6 @@ describe("Write to Speak API resource", function() {
             .request(app)
             .put("/snippets/delete-snippet")
             .send(objSend)
-            // .send({ userId: userId, snippetId: snippetToRemoveId })
             .then(res => {
               expect(res).to.have.status(204); // No content
             })
@@ -290,6 +287,18 @@ describe("Write to Speak API resource", function() {
           expect(user.snippetCount).to.equal(testUser.snippets.length);
         })
         .then(() => done());
+    });
+
+    it("Finds the maximum snippet order number for a single user", done => {
+      RegisteredUser.findOne({})
+        .then(user => {
+          for (let i = 0; i < parseInt(user.snippetCount, 10); i++) {
+            expect(user.maxOrder).to.be.at.least(parseInt(user.snippets[i].snippetOrder), 10);
+          }
+        })
+        .then(() => {
+          done();
+        });
     });
   });
 });
