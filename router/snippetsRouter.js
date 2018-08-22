@@ -46,14 +46,18 @@ function checkForBadData(body) {
 
 // Get snippets for all owners (something only administrators should be able to do...)
 router.get("/all", jsonParser, (req, res) => {
-  RegisteredUser.find({})
-    .populate("snippets")
-    .then(snippets => {
-      if (snippets.length < 1) {
-        return res.status(404).send("No snippets found");
+  let totalSnippets = 0;
+  RegisteredUser.find({}).then(users => {
+    const filteredUsers = users.filter(user => {
+      if (user.snippetCount) {
+        totalSnippets += user.snippetCount;
+        // console.log("serial inside router: ", user.serialize());
+        return true;
       }
-      return res.status(200).json(snippets);
     });
+    const usersWithSnippets = filteredUsers.map(user => user.serialize());
+    return res.status(200).json({ totalSnippets, usersWithSnippets });
+  });
 });
 
 // Get snippets for one owner

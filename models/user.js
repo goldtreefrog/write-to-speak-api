@@ -20,7 +20,11 @@ const registeredUserSchema = mongoose.Schema(
 
 // When creating virtual, must use get(function) rather than ES6 get(()=>) in order to have 'this' refer to the model rather than this whole file.
 registeredUserSchema.virtual("snippetCount").get(function() {
-  return this.snippets.length;
+  let length = 0;
+  if (this.snippets.length) {
+    length = this.snippets.length;
+  }
+  return length;
 });
 
 registeredUserSchema.virtual("maxOrder").get(function() {
@@ -32,11 +36,16 @@ registeredUserSchema.virtual("maxOrder").get(function() {
 
 // For just name & email
 registeredUserSchema.methods.serialize = function() {
+  let sortedSnippets = this.snippets.sort(function(a, b) {
+    return a.snippetOrder - b.snippetOrder;
+  });
   return {
     _id: this._id || "",
     email: this.email || "",
     firstName: this.firstName || "",
     lastName: this.lastName || "",
+    snippetCount: this.snippetCount || "0",
+    snippets: sortedSnippets || [],
     createdAt: this.createdAt,
     updatedAt: this.updatedAt
   };

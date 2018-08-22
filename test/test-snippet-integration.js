@@ -13,26 +13,51 @@ const expect = chai.expect;
 
 chai.use(chaiHttp);
 
+function generateRandomNumber(lowN, highN) {
+  // Math.random() produces a random number from 0 to 1 (but excluding 1).
+  // Mutliply that by the difference from low to high.
+  // So far you have the right distance between low and high but you are starting at 0.
+  // Add the low number to that so you start from the low number instead of 0.
+  // Math.ceil() rounds up so you only have integers. (.floor() rounds down/truncates)
+  return Math.ceil(Math.random() * (highN - lowN) + lowN);
+}
+
 // put randomish documents in db for tests.
 // use the Faker library to automatically generate placeholder values
-function seedSnippetData(owner, nbr) {
-  console.info("seeding Snippet data");
-  const seedData = [];
-  const iterations = nbr || 4;
-
-  for (let i = 0; i < iterations; i++) {
-    seedData.push(generateSnippetData());
+function seedSnippetData() {
+  let seedData = [];
+  // The first user has no snippets because I need to test that too.
+  let users = [
+    {
+      firstName: faker.name.firstName(),
+      lastName: faker.name.lastName(),
+      email: faker.internet.email(),
+      password: faker.internet.password(),
+      snippets: seedData,
+      createdAt: "",
+      updatedAt: ""
+    }
+  ];
+  // Add more users and give them some snippets
+  let maxSnippets;
+  for (let i = 0; i < 4; i++) {
+    maxSnippets = generateRandomNumber(0, 6);
+    seedData = [];
+    for (let j = 0; j < maxSnippets; j++) {
+      seedData.push(generateSnippetData());
+    }
+    users.push({
+      firstName: faker.name.firstName(),
+      lastName: faker.name.lastName(),
+      email: faker.internet.email(),
+      password: faker.internet.password(),
+      snippets: seedData,
+      createdAt: "",
+      updatedAt: ""
+    });
   }
   // this will return a promise
-  return RegisteredUser.insertMany({
-    firstName: faker.name.firstName(),
-    lastName: faker.name.lastName(),
-    email: faker.internet.email(),
-    password: faker.internet.password(),
-    snippets: seedData,
-    createdAt: "",
-    updatedAt: ""
-  });
+  return RegisteredUser.insertMany(users);
 }
 
 // generate an object represnting a registered snippet.
@@ -82,32 +107,56 @@ describe("Write to Speak API resource", function() {
   // Tests in nested `describe` blocks.
   // Note the way done() is used. Thinkful suggested 'return chai...' so you wouldn't have to call done(), but I concluded the weird 404 errors I got on some tests ONLY when running all tests together was due to the tests running asynchronously. The steps within a given test would run in order, but several tests would run at once, so one test would cause the database to be dropped when it finished while other tests were still running. Not good. Works better with done() inside a final .then() - so far...
   describe("GET endpoint - retrieve Snippets", function() {
-    it("should retrieve all snippets for all owners when no owner specified", function(done) {
+    it("should retrieve all snippets for all owners who have snippets when no owner specified", function(done) {
       chai
         .request(app)
         .get("/snippets/all")
         .then(function(res) {
           expect(res).to.have.status(200);
-          expect(res.body).to.have.length.gt(0);
+          expect(res.body.usersWithSnippets).to.have.length.gt(0);
+          res.body.usersWithSnippets.map(user => {
+            // Returned version of user should be serialized with only select fields
+            expect(user.snippetCount).to.not.be.null;
+            expect(user.snippetCount).to.exist;
+            // Since only want users with snippets...
+            expect(user.snippetCount).to.be.at.least(1);
+            expect(user.snippets.length).to.equal(user.snippetCount);
+            expect(user.firstName).to.exist;
+            expect(user.lastName).to.exist;
+            // Do not return passwords
+            expect(user.password).to.not.exist;
+            expect(user.email).to.exist;
+          });
         })
         .then(() => {
           done();
         });
     });
 
+    // Works but you need to test it for the first user too, as he/she has no snippets
     it("should retrieve all Snippets for a given owner", function(done) {
-      RegisteredUser.findOne({}).then(user => {
-        chai
-          .request(app)
-          .get(`/snippets/owner/${user._id}`)
-          .then(function(res) {
-            expect(res).to.have.status(200);
-            expect(res.body).to.have.length.of.at.least(1);
-          })
-          .then(() => {
-            done();
-          });
-      });
+      RegisteredUser.find({})
+        .limit(2)
+        .then(users => {
+          let i;
+          for (i = 0; i < 2; i++) {
+            if (users[i].snippetCount && users[i].snippetCount > 0) {
+              return users[i];
+            }
+          }
+        })
+        .then(user => {
+          chai
+            .request(app)
+            .get(`/snippets/owner/${user._id}`)
+            .then(function(res) {
+              expect(res).to.have.status(200);
+              expect(res.body).to.have.length.of.at.least(1);
+            })
+            .then(() => {
+              done();
+            });
+        });
     });
 
     it("should not retrieve any snippets for an owner that does not exist", function(done) {
@@ -194,38 +243,50 @@ describe("Write to Speak API resource", function() {
     });
   });
 
-  describe("PUT endpoint - update Snippet", function() {
+  describe("PUT endpoint - ", function() {
     it("should update snippetText", function(done) {
       let updateSnippetTo = {
         snippetText: "Here is the new text for the updated snippet."
       };
       let objSend = {};
-      // Find an existing user for which we will change the first snippet
-      RegisteredUser.findOne({}).then(user => {
-        objSend.userId = user._id;
-        objSend.snippetId = user.snippets[0]._id;
-        objSend.snippetCategory = updateSnippetTo.category = user.snippets[0].category;
-        objSend.origText = user.snippets[0].snippetText;
-        objSend.snippet = updateSnippetTo;
-        chai
-          .request(app)
-          .put("/snippets/update-snippet")
-          .send(objSend)
-          .then(res => {
-            expect(res).to.have.status(200);
+      // Find an existing user with snippet(s) for which we will change the first snippet
+      // RegisteredUser.findOne({})
+      RegisteredUser.find({})
+        .limit(3)
+        .then(users => {
+          let i;
+          for (i = 0; i < 2; i++) {
+            if (users[i].snippetCount && users[i].snippetCount > 0) {
+              return users[i];
+            }
+          }
+        })
+        .then(user => {
+          objSend.userId = user._id;
+          objSend.snippetId = user.snippets[0]._id;
+          updateSnippetTo.category = user.snippets[0].category;
+          // objSend.snippetCategory = updateSnippetTo.category = user.snippets[0].category;
+          // objSend.origText = user.snippets[0].snippetText;
+          objSend.snippet = updateSnippetTo;
+          chai
+            .request(app)
+            .put("/snippets/update-snippet")
+            .send(objSend)
+            .then(res => {
+              expect(res).to.have.status(200);
 
-            let itemText = res.body.map(item => {
-              return item["snippetText"];
-            });
-            expect(itemText).to.include(updateSnippetTo.snippetText);
+              let itemText = res.body.map(item => {
+                return item["snippetText"];
+              });
+              expect(itemText).to.include(updateSnippetTo.snippetText);
 
-            let itemCategory = res.body.map(item => {
-              return item["category"];
-            });
-            expect(itemCategory).to.include(updateSnippetTo.category);
-          })
-          .then(() => done());
-      });
+              let itemCategory = res.body.map(item => {
+                return item["category"];
+              });
+              expect(itemCategory).to.include(updateSnippetTo.category);
+            })
+            .then(() => done());
+        });
     });
 
     describe("PUT endpoint - remove snippet", function() {
@@ -237,27 +298,37 @@ describe("Write to Speak API resource", function() {
         let origSnippets = [];
         let objSend = {};
 
-        RegisteredUser.findOne({}).then(user => {
-          objSend.userId = user._id;
-          origSnippets = user.snippets;
-          objSend.snippetId = origSnippets[1]._id;
-          chai
-            .request(app)
-            .put("/snippets/delete-snippet")
-            .send(objSend)
-            .then(res => {
-              expect(res).to.have.status(204); // No content
-            })
-            .then(() => {
-              RegisteredUser.findById(objSend.userId)
-                .then(user => {
-                  expect(user.snippets.length).to.be.equal(origSnippets.length - 1);
-                  expect(JSON.stringify(user.snippets[0])).to.equal(JSON.stringify(origSnippets[0]));
-                  expect(JSON.stringify(user.snippets[1])).not.to.equal(JSON.stringify(origSnippets[1]));
-                })
-                .then(() => done());
-            });
-        });
+        RegisteredUser.find({})
+          .limit(5)
+          .then(users => {
+            let i;
+            for (i = 0; i < 5; i++) {
+              if (users[i].snippetCount && users[i].snippetCount > 0) {
+                return users[i];
+              }
+            }
+          })
+          .then(user => {
+            objSend.userId = user._id;
+            origSnippets = user.snippets;
+            objSend.snippetId = origSnippets[1]._id;
+            chai
+              .request(app)
+              .put("/snippets/delete-snippet")
+              .send(objSend)
+              .then(res => {
+                expect(res).to.have.status(204); // No content
+              })
+              .then(() => {
+                RegisteredUser.findById(objSend.userId)
+                  .then(user => {
+                    expect(user.snippets.length).to.be.equal(origSnippets.length - 1);
+                    expect(JSON.stringify(user.snippets[0])).to.equal(JSON.stringify(origSnippets[0]));
+                    expect(JSON.stringify(user.snippets[1])).not.to.equal(JSON.stringify(origSnippets[1]));
+                  })
+                  .then(() => done());
+              });
+          });
       });
     });
   });
