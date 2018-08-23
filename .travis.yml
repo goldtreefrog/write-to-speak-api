@@ -1,10 +1,10 @@
-language:    node_js
-node_js:     node
+language: node_js
+node_js: node
 services:
 - mongodb
-script:      mocha --recursive --timeout 10000 --exit
+script: mocha --recursive --timeout 10000 --exit
 deploy:
-  provider:  heroku
+  provider: heroku
   api_key:
-    secure:  YKk08W0fkW0lvXUxpnfsU4A79KtWn5xjnmDbLtZfWD3p/T44rTcAOr+DsEnHtG1Ct/Rx2bH9IpaBf+k5FqHdhhAvE3o1EhTwegOR7Lr7eh656Pl7t1tGxFR+vTY5yK45qQynUxY8IFsUFLruJKGR9aKRnMvH9Cpv+QZBaRsCBEDvmcet4l6n35bUn9s7D4F4G39r+/nmxr4+C+0hpVVnHOCJgeW1FQ6CFYR2XXfWA2hyVwzzFiwY/6/PAIXC7LERCO706b/jM0sSoGC4ugi9HBxDb6PRPmeMQ9ZRzLT7NijG37rqiZ25qa5bGxY+kVENM3PtlhORoj7HCeNdDMyZioo+Bn+kxJtg06gSw62/as5FcTnEuuH/hl6V5IECwjzXOi2tQX83hD4ZDWcBDx1yAhCxoxdxpCKONEPSHpUeCZDPOppei79407MgBrvMn7dudVHEk/MC7aZkYEku7hhdruxa2yZvcD4LiaQlscOGhQSNqUf0pkqhVRrnjrg/jTsEXH+6CDqa3T9p0P9ePXFFMBWne94+c6Ir6JI+ynpB1IKMi3e4CikcGYgcWJMW9jS75G9MtnqycIGn9OthaNA1kfDq7qzLzNI6DUNN+D4RZW1PToGjAXpkUS7ziY9htasSIWM+4H4UH4QqrZVoNTfD55vCQrAkzzjOMbvse2oXt4c=
-  app:       agile-basin-78905
+    secure: dODWfU0XeKXFyWAiceRrnads/tQdNs+dV4Wutss9tC7Zk9ITW7bz5YO6aMdXVxTH8j6JoM6ymZtP+H5gKqUZxLe/JSOpgb/uqM9tGnNddgnTbartYHCpMKXZJZMMAd2MPUM1/YYn/eRBtj5//RQMQIL1dfuXWgCkJaeHs+p+bU4toWR5iZcnoqBwEhpI0jJNycF4vKTDLXb3cBXTOTYwOo1yWP5K20OuJSACh8p6uSd7NijnZHHuP/x2Dwgu0BAscmLeql7rpTTNa1ZfqRkiYr0msQDI+fs9xpGM5tuV+mW47KWaEFVTYYCRLItndRwrbd/cMcDYXiPEtHT8tQ2JOtX5gKxQK5DeaSQ6ePCWELfyHcpONSmYC4HWNFHbip4yHNvlvjZcseSGrvNfyDx3NCNxnS7nMo9twdBxik7lPUhE+f2Cv6AX47/Jnvuffd8IuGa9CDMHUweMM1tjkCJxgd4jJG7qtN44xLTt760t9NC4pvmsy+i9En/xM4GNmADwxbb2IYVYFE27aQWCqk7FYms1f6uHcgvXlFR7U7AJpRSoGGbSUTwZ8y+G4mX22r34QwHgIqI1Vv4vsNMEYy8LKCVcfKNWyUkIngERTCzCtSexLjyWL1LEpmhTromjpUhyk6qlydllri3zpoPbz5OhAcnfGbDI96DmDrFw2jD06Hg=
+  app: agile-basin-78905

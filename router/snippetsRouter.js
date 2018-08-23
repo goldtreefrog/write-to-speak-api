@@ -51,7 +51,6 @@ router.get("/all", jsonParser, (req, res) => {
     const filteredUsers = users.filter(user => {
       if (user.snippetCount) {
         totalSnippets += user.snippetCount;
-        // console.log("serial inside router: ", user.serialize());
         return true;
       }
     });
