@@ -87,7 +87,7 @@ router.put("/add-snippet", jsonParser, (req, res) => {
       return RegisteredUser.findByIdAndUpdate(req.body.userId, { snippets: snippets });
     })
     .then(user => {
-      return res.status(200).json(user);
+      return res.status(204).end();
     });
 });
 

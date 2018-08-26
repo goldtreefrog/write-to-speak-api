@@ -60,7 +60,7 @@ function seedSnippetData() {
   return RegisteredUser.insertMany(users);
 }
 
-// generate an object represnting a registered snippet.
+// generate an object representing a registered snippet.
 // can be used to generate seed data for db or request.body data
 function generateSnippetData() {
   return {
@@ -190,7 +190,8 @@ describe("Write to Speak API resource", function() {
           .put("/snippets/add-snippet")
           .send(sendSnippet)
           .then(res => {
-            return res.body._id;
+            expect(res).to.have.status(204);
+            return sendSnippet.userId;
           })
           .then(id => {
             return RegisteredUser.findById(id);
@@ -250,7 +251,6 @@ describe("Write to Speak API resource", function() {
       };
       let objSend = {};
       // Find an existing user with snippet(s) for which we will change the first snippet
-      // RegisteredUser.findOne({})
       RegisteredUser.find({})
         .limit(3)
         .then(users => {
@@ -265,8 +265,6 @@ describe("Write to Speak API resource", function() {
           objSend.userId = user._id;
           objSend.snippetId = user.snippets[0]._id;
           updateSnippetTo.category = user.snippets[0].category;
-          // objSend.snippetCategory = updateSnippetTo.category = user.snippets[0].category;
-          // objSend.origText = user.snippets[0].snippetText;
           objSend.snippet = updateSnippetTo;
           chai
             .request(app)
