@@ -300,8 +300,9 @@ describe("Write to Speak API resource", function() {
           .limit(5)
           .then(users => {
             let i;
+            // Find a user with at least 2 snippets.
             for (i = 0; i < 5; i++) {
-              if (users[i].snippetCount && users[i].snippetCount > 0) {
+              if (users[i].snippetCount && users[i].snippetCount > 1) {
                 return users[i];
               }
             }
@@ -309,6 +310,7 @@ describe("Write to Speak API resource", function() {
           .then(user => {
             objSend.userId = user._id;
             origSnippets = user.snippets;
+            // Remove the 2nd snippet
             objSend.snippetId = origSnippets[1]._id;
             chai
               .request(app)
