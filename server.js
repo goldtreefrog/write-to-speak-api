@@ -4,7 +4,8 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
-const { DATABASE_URL, PORT } = require("./config");
+const cors = require("cors");
+const { DATABASE_URL, PORT, CLIENT_ORIGIN } = require("./config");
 const logRequest = require("./log-request"); // Log requests
 const usersRouter = require("./router/usersRouter");
 const snippetsRouter = require("./router/snippetsRouter");
@@ -17,6 +18,11 @@ const app = express();
 // Log all requests
 app.all("/", logRequest);
 
+app.use(
+  cors({
+    origin: CLIENT_ORIGIN
+  })
+);
 app.use("/users/", usersRouter);
 app.use("/snippets/", snippetsRouter);
 app.use(bodyParser.json());
