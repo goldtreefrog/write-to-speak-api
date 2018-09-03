@@ -2,10 +2,10 @@
 
 const express = require("express");
 const router = express.Router();
-
 const bodyParser = require("body-parser");
 const jsonParser = bodyParser.json();
-
+const jwt = require("jsonwebtoken");
+const { authRouter, localStrategy, jwtStrategy } = require("./../auth");
 const { Snippet } = require("./../models/snippet");
 
 function getRequiredFields(includeUpdatedAt = false) {
@@ -75,7 +75,11 @@ router.post("/add-snippet", jsonParser, (req, res) => {
 
   let { owner, category, snippetOrder, snippetText } = req.body;
 
-  return Snippet.find({ owner: req.body.owner, category: req.body.category, snippetText: req.body.snippetText })
+  return Snippet.find({
+    owner: req.body.owner,
+    category: req.body.category,
+    snippetText: req.body.snippetText
+  })
     .count()
     .then(count => {
       if (count > 0) {
@@ -83,7 +87,8 @@ router.post("/add-snippet", jsonParser, (req, res) => {
         return Promise.reject({
           code: 422,
           reason: "ValidationError",
-          message: "Cannot save a snippet that is identical to one that already exists.",
+          message:
+            "Cannot save a snippet that is identical to one that already exists.",
           location: "snippet"
         });
       }
@@ -92,7 +97,12 @@ router.post("/add-snippet", jsonParser, (req, res) => {
     .then(snippet => {
       let category = snippet.category || "uncategorized";
       let snippetOrder = snippet.snippetOrder || "2";
-      return Snippet.create({ owner: snippet.owner, category, snippetText: snippet.snippetText, snippetOrder });
+      return Snippet.create({
+        owner: snippet.owner,
+        category,
+        snippetText: snippet.snippetText,
+        snippetOrder
+      });
     })
     .then(snippet => {
       return res.status(201).json(snippet);
@@ -145,7 +155,9 @@ router.delete("/:id", jsonParser, (req, res) => {
     })
     .catch(function(err) {
       console.error(err);
-      res.status(500).json({ message: `Internal server error. Record not deleted. Error: ${err}` });
+      res.status(500).json({
+        message: `Internal server error. Record not deleted. Error: ${err}`
+      });
     });
 });
 
