@@ -1,7 +1,7 @@
 "use strict";
 
 const chai = require("chai");
-const chaiHttp = require("chai-Http");
+const chaiHttp = require("chai-http");
 const faker = require("faker");
 const mongoose = require("mongoose");
 const { Snippet } = require("./../models/snippet.js");
@@ -131,7 +131,13 @@ describe("Write to Speak API resource", function() {
         .then(res => {
           expect(res).to.have.status(201);
           expect(res.body).to.be.a("object");
-          expect(res.body).to.include.keys("_id", "owner", "category", "createdAt", "updatedAt");
+          expect(res.body).to.include.keys(
+            "_id",
+            "owner",
+            "category",
+            "createdAt",
+            "updatedAt"
+          );
           return res;
         })
         .then(res => {

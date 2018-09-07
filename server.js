@@ -1,14 +1,20 @@
 "use strict";
 
 // Setup
+require("dotenv").config();
 const express = require("express");
-// const bodyParser = require("body-parser"); // Use in routers.
+const bodyParser = require("body-parser"); // Use in routers.
 const mongoose = require("mongoose");
 const morgan = require("morgan");
 const passport = require("passport");
 const cors = require("cors");
-const { DATABASE_URL, PORT, PASSPORT_CONFIG } = require("./config");
-const logRequest = require("./log-request"); // Log requests
+const {
+  DATABASE_URL,
+  PORT,
+  PASSPORT_CONFIG,
+  CLIENT_ORIGIN
+} = require("./config");
+// const logRequest = require("./log-request"); // Log requests
 const usersRouter = require("./router/usersRouter");
 const snippetsRouter = require("./router/snippetsRouter");
 const { router: authRouter, localStrategy, jwtStrategy } = require("./auth");
@@ -45,7 +51,7 @@ app.use("/val/auth/", authRouter);
 // // "When you submit form data with a POST request, that form data can be encoded in many ways. The default type for HTML forms is application/x-www-urlencoded, but you can also submit data as JSON or any other arbitrary format.
 // // "bodyParser.urlencoded() provides middleware for automatically parsing forms with the content-type application/x-www-urlencoded and storing the result as a dictionary (object) in req.body. The body-parser module also provides middleware for parsing JSON, plain text, or just returning a raw Buffer object for you to deal with as needed."
 // // from https://www.reddit.com/r/learnprogramming/comments/2qr8om/nodejs_why_do_we_need_body_parser_urlencoded_in/
-// app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({ extended: false }));
 
 // // initialize passport for use - WHY?
 // app.use(passport.initialize());
@@ -69,7 +75,9 @@ function runServer(databaseUrl, port = PORT) {
         let now = new Date();
         server = app
           .listen(port, () => {
-            console.log(`Your gorgeous app is listening on port ${port} on ${now}`);
+            console.log(
+              `Your gorgeous app is listening on port ${port} on ${now}`
+            );
             resolve();
           })
           .on("error", err => {
