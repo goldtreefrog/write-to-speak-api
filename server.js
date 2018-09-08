@@ -14,7 +14,6 @@ const {
   PASSPORT_CONFIG,
   CLIENT_ORIGIN
 } = require("./config");
-// const logRequest = require("./log-request"); // Log requests
 const usersRouter = require("./router/usersRouter");
 const snippetsRouter = require("./router/snippetsRouter");
 const { router: authRouter, localStrategy, jwtStrategy } = require("./auth");
@@ -40,6 +39,11 @@ app.use(
 passport.use(localStrategy);
 passport.use(jwtStrategy);
 
+app.use(
+  cors({
+    origin: CLIENT_ORIGIN
+  })
+);
 app.use("/users/", usersRouter);
 app.use("/snippets/", snippetsRouter);
 app.use("/val/auth/", authRouter);
@@ -66,12 +70,27 @@ let server;
 // this function connects to our database, then starts the server
 function runServer(databaseUrl, port = PORT) {
   return new Promise((resolve, reject) => {
-    mongoose.connect(
-      databaseUrl,
-      err => {
-        if (err) {
+    mongoose
+      .connect(
+        databaseUrl,
+        { useNewUrlParser: true }
+      )
+      .then(
+        () => {
+          let now = new Date();
+          server = app
+            .listen(port, () => {
+              console.log(`Your gorgeous app is listening on port ${port} on ${now}`);
+              resolve();
+            })
+            .on("error", err => {
+              reject(err);
+            });
+        },
+        err => {
           return reject(err);
         }
+
         let now = new Date();
         server = app
           .listen(port, () => {

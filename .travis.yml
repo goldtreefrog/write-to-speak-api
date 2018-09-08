@@ -1,0 +1,10 @@
+language: node_js
+node_js: node
+services:
+- mongodb
+script: mocha --recursive --timeout 10000 --exit
+deploy:
+  provider: heroku
+  api_key:
+    secure: dODWfU0XeKXFyWAiceRrnads/tQdNs+dV4Wutss9tC7Zk9ITW7bz5YO6aMdXVxTH8j6JoM6ymZtP+H5gKqUZxLe/JSOpgb/uqM9tGnNddgnTbartYHCpMKXZJZMMAd2MPUM1/YYn/eRBtj5//RQMQIL1dfuXWgCkJaeHs+p+bU4toWR5iZcnoqBwEhpI0jJNycF4vKTDLXb3cBXTOTYwOo1yWP5K20OuJSACh8p6uSd7NijnZHHuP/x2Dwgu0BAscmLeql7rpTTNa1ZfqRkiYr0msQDI+fs9xpGM5tuV+mW47KWaEFVTYYCRLItndRwrbd/cMcDYXiPEtHT8tQ2JOtX5gKxQK5DeaSQ6ePCWELfyHcpONSmYC4HWNFHbip4yHNvlvjZcseSGrvNfyDx3NCNxnS7nMo9twdBxik7lPUhE+f2Cv6AX47/Jnvuffd8IuGa9CDMHUweMM1tjkCJxgd4jJG7qtN44xLTt760t9NC4pvmsy+i9En/xM4GNmADwxbb2IYVYFE27aQWCqk7FYms1f6uHcgvXlFR7U7AJpRSoGGbSUTwZ8y+G4mX22r34QwHgIqI1Vv4vsNMEYy8LKCVcfKNWyUkIngERTCzCtSexLjyWL1LEpmhTromjpUhyk6qlydllri3zpoPbz5OhAcnfGbDI96DmDrFw2jD06Hg=
+  app: agile-basin-78905
