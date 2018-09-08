@@ -80,7 +80,9 @@ function runServer(databaseUrl, port = PORT) {
           let now = new Date();
           server = app
             .listen(port, () => {
-              console.log(`Your gorgeous app is listening on port ${port} on ${now}`);
+              console.log(
+                `Your gorgeous app is listening on port ${port} on ${now}`
+              );
               resolve();
             })
             .on("error", err => {
@@ -91,19 +93,19 @@ function runServer(databaseUrl, port = PORT) {
           return reject(err);
         }
 
-        let now = new Date();
-        server = app
-          .listen(port, () => {
-            console.log(
-              `Your gorgeous app is listening on port ${port} on ${now}`
-            );
-            resolve();
-          })
-          .on("error", err => {
-            reject(err);
-          });
-      }
-    );
+        //   let now = new Date();
+        //   server = app
+        //     .listen(port, () => {
+        //       console.log(
+        //         `Your gorgeous app is listening on port ${port} on ${now}`
+        //       );
+        //       resolve();
+        //     })
+        //     .on("error", err => {
+        //       reject(err);
+        //     });
+        // }
+      );
   });
 }
 
