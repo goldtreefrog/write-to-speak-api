@@ -136,20 +136,22 @@ describe("Write to Speak API resource", function() {
     // Works but you need to test it for the first user too, as he/she has no snippets
     it("should retrieve all Snippets for a given owner", function(done) {
       RegisteredUser.find({})
-        .limit(2)
+        .limit(5)
         .then(users => {
           let i;
-          for (i = 0; i < 2; i++) {
+          for (i = 0; i < 5; i++) {
             if (users[i].snippetCount && users[i].snippetCount > 0) {
               return users[i];
             }
           }
         })
         .then(user => {
+          let sendId = { _id: user._id };
           chai
             .request(app)
-            .get(`/snippets/owner/${user._id}`)
-            .then(function(res) {
+            .get("/snippets/owner")
+            .send(sendId)
+            .then(res => {
               expect(res).to.have.status(200);
               expect(res.body).to.have.length.of.at.least(1);
             })

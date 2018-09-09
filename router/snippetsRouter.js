@@ -60,8 +60,11 @@ router.get("/all", jsonParser, (req, res) => {
 });
 
 // Get snippets for one owner
-router.get("/owner/:owner", jsonParser, (req, res) => {
-  RegisteredUser.findById(req.params.owner).then(user => {
+// router.get("/owner/:owner", jsonParser, (req, res) => {
+//   RegisteredUser.findById(req.params.owner).then(user => {
+router.get("/owner", jsonParser, (req, res) => {
+  console.log(req.body);
+  RegisteredUser.findById(req.body._id).then(user => {
     if (!user) {
       return res.status(404).send("Owner does not exist in our system");
     }
