@@ -7,76 +7,12 @@ const mongoose = require("mongoose");
 const { RegisteredUser } = require("./../models/user.js");
 const { app, runServer, closeServer } = require("../server");
 const { TEST_DATABASE_URL } = require("../config");
+const { tearDownDb, seedData } = require("./utils/manage-database.js");
 
 // make the expect syntax available throughout this module
 const expect = chai.expect;
 
 chai.use(chaiHttp);
-
-function generateRandomNumber(lowN, highN) {
-  // Math.random() produces a random number from 0 to 1 (but excluding 1).
-  // Mutliply that by the difference from low to high.
-  // So far you have the right distance between low and high but you are starting at 0.
-  // Add the low number to that so you start from the low number instead of 0.
-  // Math.ceil() rounds up so you only have integers. (.floor() rounds down/truncates)
-  return Math.ceil(Math.random() * (highN - lowN) + lowN);
-}
-
-// put randomish documents in db for tests.
-// use the Faker library to automatically generate placeholder values
-function seedSnippetData() {
-  let seedData = [];
-  // The first user has no snippets because I need to test that too.
-  let users = [
-    {
-      firstName: faker.name.firstName(),
-      lastName: faker.name.lastName(),
-      email: faker.internet.email(),
-      password: faker.internet.password(),
-      snippets: seedData,
-      createdAt: "",
-      updatedAt: ""
-    }
-  ];
-  // Add more users and give them some snippets
-  let maxSnippets;
-  for (let i = 0; i < 4; i++) {
-    maxSnippets = generateRandomNumber(0, 6);
-    seedData = [];
-    for (let j = 0; j < maxSnippets; j++) {
-      seedData.push(generateSnippetData());
-    }
-    users.push({
-      firstName: faker.name.firstName(),
-      lastName: faker.name.lastName(),
-      email: faker.internet.email(),
-      password: faker.internet.password(),
-      snippets: seedData,
-      createdAt: "",
-      updatedAt: ""
-    });
-  }
-  // this will return a promise
-  return RegisteredUser.insertMany(users);
-}
-
-// generate an object representing a registered snippet.
-// can be used to generate seed data for db or request.body data
-function generateSnippetData() {
-  return {
-    category: faker.hacker.noun(),
-    snippetText: faker.lorem.text(),
-    snippetOrder: faker.random.number()
-  };
-}
-
-// Deletes test database.
-// called in `afterEach` block below to ensure data from one test is gone
-// before the next test.
-function tearDownDb() {
-  console.warn("Deleting database");
-  return mongoose.connection.dropDatabase();
-}
 
 describe("Write to Speak API resource", function() {
   // Each hook function returns a promise (otherwise we'd need to call a `done` callback).
@@ -89,8 +25,8 @@ describe("Write to Speak API resource", function() {
   });
 
   beforeEach(function() {
-    return seedSnippetData().catch(err => {
-      console.log("Inside beforeEach, err from seedSnippetData(): ", err);
+    return seedData().catch(err => {
+      console.log("Inside beforeEach, err from seedData(): ", err);
     });
   });
 
@@ -162,10 +98,11 @@ describe("Write to Speak API resource", function() {
     });
 
     it("should not retrieve any snippets for an owner that does not exist", function(done) {
-      let owner = mongoose.Types.ObjectId("123456789012");
+      // let owner = mongoose.Types.ObjectId("123456789012");
       chai
         .request(app)
-        .get(`/snippets/owner/${owner}`)
+        .get(`/snippets/owner/`)
+        .send({ _id: "123456789012" })
         .then(function(res) {
           expect(res).to.have.status(404);
         })
