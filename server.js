@@ -16,7 +16,12 @@ const {
 } = require("./config");
 const usersRouter = require("./router/usersRouter");
 const snippetsRouter = require("./router/snippetsRouter");
-const { router: authRouter, localStrategy, jwtStrategy } = require("./auth");
+const {
+  router: authRouter,
+  localStrategy,
+  jwtStrategy,
+  jwtAuth
+} = require("./auth");
 
 // Make Mongoose use ES6 promises rather than Mongoose's own
 mongoose.Promise = global.Promise;
@@ -60,7 +65,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 // // initialize passport for use - WHY?
 // app.use(passport.initialize());
 
-const jwtAuth = passport.authenticate("jwt", { session: false });
+// const jwtAuth = passport.authenticate("jwt", { session: false });
 
 // closeServer needs access to a server object, but that only
 // gets created when `runServer` runs, so we declare `server` here
@@ -92,19 +97,6 @@ function runServer(databaseUrl, port = PORT) {
         err => {
           return reject(err);
         }
-
-        //   let now = new Date();
-        //   server = app
-        //     .listen(port, () => {
-        //       console.log(
-        //         `Your gorgeous app is listening on port ${port} on ${now}`
-        //       );
-        //       resolve();
-        //     })
-        //     .on("error", err => {
-        //       reject(err);
-        //     });
-        // }
       );
   });
 }

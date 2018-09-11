@@ -3,7 +3,12 @@
 const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
-const { authRouter, localStrategy, jwtStrategy } = require("./../auth");
+const {
+  router: authRouter,
+  localStrategy,
+  jwtStrategy,
+  jwtAuth
+} = require("./../auth");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const jsonParser = bodyParser.json();
@@ -44,8 +49,10 @@ function checkForBadData(body) {
   return message;
 }
 
+router.use(jsonParser);
+
 // Get snippets for all owners (something only administrators should be able to do...)
-router.get("/all", jsonParser, (req, res) => {
+router.get("/all", jwtAuth, (req, res) => {
   let totalSnippets = 0;
   RegisteredUser.find({}).then(users => {
     const filteredUsers = users.filter(user => {
@@ -60,10 +67,7 @@ router.get("/all", jsonParser, (req, res) => {
 });
 
 // Get snippets for one owner
-// router.get("/owner/:owner", jsonParser, (req, res) => {
-//   RegisteredUser.findById(req.params.owner).then(user => {
-router.get("/owner", jsonParser, (req, res) => {
-  console.log(req.body);
+router.get("/owner", jwtAuth, (req, res) => {
   RegisteredUser.findById(req.body._id).then(user => {
     if (!user) {
       return res.status(404).send("Owner does not exist in our system");
@@ -76,7 +80,7 @@ router.get("/owner", jsonParser, (req, res) => {
 });
 
 // Create a snippet (entry in subdocument array) for existing user
-router.put("/add-snippet", jsonParser, (req, res) => {
+router.put("/add-snippet", jwtAuth, (req, res) => {
   let message = checkForBadData(req.body);
   if (!(message === "")) {
     return res.status(400).json({ message });

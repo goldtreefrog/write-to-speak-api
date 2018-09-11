@@ -1,17 +1,15 @@
 "use strict";
 const express = require("express");
 const passport = require("passport");
-// const LocalStrategy = require("passport").Strategy;
 const bodyParser = require("body-parser");
 const jwt = require("jsonwebtoken");
 
 const { JWT_SECRET, JWT_EXPIRY } = require("../config");
 const router = express.Router();
 
-// User in this context is username and password
+// User in this context is email and password
 const createAuthToken = function(user) {
   const data = {
-    // subject: user.username,
     subject: user.email,
     expiresIn: JWT_EXPIRY,
     algorithm: "HS256"
@@ -22,7 +20,7 @@ const createAuthToken = function(user) {
 const localAuth = passport.authenticate("local", { session: false });
 router.use(bodyParser.json());
 
-// The user provides a username and password to login
+// The user provides an email and password to login
 router.post("/login", localAuth, (req, res) => {
   const authToken = createAuthToken(req.body);
   res.json({ authToken });
@@ -36,4 +34,4 @@ router.post("/refresh", jwtAuth, (req, res) => {
   res.json({ authToken });
 });
 
-module.exports = { router };
+module.exports = { router, jwtAuth };

@@ -25,48 +25,70 @@ function generateRandomNumber(lowN, highN) {
 // put randomish documents in db for tests.
 // use the Faker library to automatically generate placeholder values
 const seedData = (owner, nbr) => {
-  console.info("seeding Snippet data for owner: ", owner);
   const ownerData = [];
   const users = [];
 
   if (owner) {
-    users = owner.map(user => {
-      return user;
-    });
+    let finishedUsers = RegisteredUser.hashPassword(owner.password).then(
+      function(hash) {
+        users.push({
+          firstName: owner.firstName,
+          lastName: owner.lastName,
+          email: owner.email,
+          password: hash,
+          snippets: [],
+          createdAt: "",
+          updatedAt: ""
+        });
+        console
+          .log(
+            "Dddddddddduhhh users!!!!! manage-database return users: ",
+            users
+          )
+          .then(function(res) {
+            resolve(res.users);
+          });
+      }
+    );
   } else {
     // We put one user at the front with no snippets. More are added further below.
-    users.push({
-      firstName: faker.name.firstName(),
-      lastName: faker.name.lastName(),
-      email: faker.internet.email(),
-      password: faker.internet.password(),
-      snippets: [],
-      createdAt: "",
-      updatedAt: ""
+    RegisteredUser.hashPassword(faker.internet.password()).then(function(hash) {
+      users.push({
+        firstName: faker.name.firstName(),
+        lastName: faker.name.lastName(),
+        email: faker.internet.email(),
+        password: hash,
+        snippets: [],
+        createdAt: "",
+        updatedAt: ""
+      });
     });
-  }
 
-  // Add more users and give them some snippets
-  let maxSnippets;
-  for (let i = 0; i < 4; i++) {
-    maxSnippets = generateRandomNumber(0, 6);
-    const seedSnippetData = [];
-    for (let j = 0; j < maxSnippets; j++) {
-      seedSnippetData.push(generateSnippetData());
+    // Add more users and give them some snippets
+    let maxSnippets;
+    for (let i = 0; i < 4; i++) {
+      maxSnippets = generateRandomNumber(0, 6);
+      const seedSnippetData = [];
+      for (let j = 0; j < maxSnippets; j++) {
+        seedSnippetData.push(generateSnippetData());
+      }
+      RegisteredUser.hashPassword(faker.internet.password()).then(function(
+        hash
+      ) {
+        users.push({
+          firstName: faker.name.firstName(),
+          lastName: faker.name.lastName(),
+          email: faker.internet.email(),
+          password: hash,
+          snippets: seedSnippetData,
+          createdAt: "",
+          updatedAt: ""
+        });
+        return users;
+      });
     }
-    users.push({
-      firstName: faker.name.firstName(),
-      lastName: faker.name.lastName(),
-      email: faker.internet.email(),
-      password: faker.internet.password(),
-      snippets: seedSnippetData,
-      createdAt: "",
-      updatedAt: ""
-    });
+    return users;
   }
-
-  // this will return a promise
-  return RegisteredUser.insertMany(users);
 };
 
 // generate an object represnting a registered snippet.

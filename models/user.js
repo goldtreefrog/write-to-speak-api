@@ -9,8 +9,22 @@ const registeredUserSchema = mongoose.Schema(
   {
     firstName: { type: String, trim: true },
     lastName: { type: String, trim: true },
-    email: { type: String, required: true, trim: true, unique: 1, minlength: 5 },
-    password: { type: String, required: true, trim: true, minlength: 6, maxlength: 72 },
+    email: {
+      type: String,
+      required: true,
+      trim: true,
+      unique: 1,
+      minlength: 5
+    },
+    password: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 6,
+      maxlength: 72
+    },
+    lastLogin: { type: Date },
+    lastLogout: { type: Date },
     snippets: [SnippetSchema]
   },
   {
@@ -34,7 +48,7 @@ registeredUserSchema.virtual("maxOrder").get(function() {
   return orderedSnippets[0].snippetOrder;
 });
 
-// For just name & email
+// For user without password
 registeredUserSchema.methods.serialize = function() {
   let sortedSnippets = this.snippets.sort(function(a, b) {
     return a.snippetOrder - b.snippetOrder;
@@ -47,7 +61,8 @@ registeredUserSchema.methods.serialize = function() {
     snippetCount: this.snippetCount || "0",
     snippets: sortedSnippets || [],
     createdAt: this.createdAt,
-    updatedAt: this.updatedAt
+    updatedAt: this.updatedAt,
+    lastLogin: this.lastLogin
   };
 };
 

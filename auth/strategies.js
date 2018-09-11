@@ -13,9 +13,9 @@ const localStrategy = new LocalStrategy(
     usernameField: "email",
     passwordField: "password"
   },
-  (username, password, callback) => {
+  (email, password, callback) => {
     let user;
-    RegisteredUser.findOne({ email: username })
+    RegisteredUser.findOne({ email: email })
       .then(_user => {
         user = _user;
         if (!user) {
@@ -35,6 +35,10 @@ const localStrategy = new LocalStrategy(
             message: "Incorrect username or password"
           });
         }
+        user.lastLogin = new Date();
+        return user.save();
+      })
+      .then(user => {
         return callback(null, user);
       })
       .catch(err => {

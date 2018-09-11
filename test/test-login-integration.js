@@ -40,8 +40,6 @@ describe("Write to Speak User Registration", function() {
   describe("POST endpoint for login", function() {
     // it("Allows a user to register by creating a user record", function() {
     // *** except that we already test this in user integration test file. The user would not be logged in at the point where she registers and creates a user record. We could either log her in automatically or ask her to login or send an email link to verify she is real and then present her with the login screen...
-    //   return chai.request(app).post("");
-    // });
     it("Allows a legitimate user to login", function() {
       let password = "bananasRoffwhitewblackseeds";
       let sendUser = {
