@@ -85,6 +85,11 @@ router.put("/add-snippet", jwtAuth, (req, res) => {
   let { userId, category, snippetOrder, snippetText } = req.body;
   RegisteredUser.findById(mongoose.Types.ObjectId(req.body.userId))
     .then(user => {
+      // If user logout is later than login, user needs to log in again and cannot add this snippet until that happens.
+      if (user.lastLogin < user.lastLogout) {
+        return res.status(401).json({ message: "Please sign in again." });
+      }
+
       let snippets = user.snippets;
       snippets.push({
         category: req.body.category,
@@ -104,6 +109,11 @@ router.put("/update-snippet", jsonParser, (req, res) => {
   let message = "";
   RegisteredUser.findById(req.body.userId)
     .then(user => {
+      // If user logout is later than login, user needs to log in again and cannot update this snippet until that happens.
+      if (user.lastLogin < user.lastLogout) {
+        return res.status(401).json({ message: "Please sign in again." });
+      }
+
       const snippet = user.snippets.id(req.body.snippetId);
       snippet.set(req.body.snippet);
       return user.save();
@@ -121,6 +131,11 @@ router.put("/update-snippet", jsonParser, (req, res) => {
 router.put("/delete-snippet", jsonParser, (req, res) => {
   RegisteredUser.findById(req.body.userId)
     .then(user => {
+      // If user logout is later than login, user needs to log in again and cannot update this snippet until that happens.
+      if (user.lastLogin < user.lastLogout) {
+        return res.status(401).json({ message: "Please sign in again." });
+      }
+
       user.snippets.pull(req.body.snippetId);
       user.save();
     })
