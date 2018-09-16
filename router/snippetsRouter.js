@@ -3,12 +3,7 @@
 const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
-const {
-  router: authRouter,
-  localStrategy,
-  jwtStrategy,
-  jwtAuth
-} = require("./../auth");
+const { router: authRouter, jwtStrategy, jwtAuth } = require("./../auth");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const jsonParser = bodyParser.json();
@@ -86,41 +81,7 @@ router.put("/add-snippet", jwtAuth, (req, res) => {
     return res.status(400).json({ message });
   }
 
-  // <<<<<<< HEAD
-  // let { owner, category, snippetOrder, snippetText } = req.body;
-  //
-  // return Snippet.find({
-  //   owner: req.body.owner,
-  //   category: req.body.category,
-  //   snippetText: req.body.snippetText
-  // })
-  //   .count()
-  //   .then(count => {
-  //     if (count > 0) {
-  //       // User already exists
-  //       return Promise.reject({
-  //         code: 422,
-  //         reason: "ValidationError",
-  //         message:
-  //           "Cannot save a snippet that is identical to one that already exists.",
-  //         location: "snippet"
-  //       });
-  //     }
-  //     return req.body;
-  //   })
-  //   .then(snippet => {
-  //     let category = snippet.category || "uncategorized";
-  //     let snippetOrder = snippet.snippetOrder || "2";
-  //     return Snippet.create({
-  //       owner: snippet.owner,
-  //       category,
-  //       snippetText: snippet.snippetText,
-  //       snippetOrder
-  //     });
-  //   })
-  //   .then(snippet => {
-  //     return res.status(201).json(snippet);
-  // =======
+  // Future: Ideally should add a check to make sure the identical snippet (same category too) does not already exist.
   let { userId, category, snippetOrder, snippetText } = req.body;
   RegisteredUser.findById(mongoose.Types.ObjectId(req.body.userId))
     .then(user => {
@@ -133,7 +94,6 @@ router.put("/add-snippet", jwtAuth, (req, res) => {
       return RegisteredUser.findByIdAndUpdate(req.body.userId, {
         snippets: snippets
       });
-      // >>>>>>> master
     })
     .then(user => {
       return res.status(204).end();
@@ -167,16 +127,11 @@ router.put("/delete-snippet", jsonParser, (req, res) => {
     .then(function() {
       res.status(204).end();
     })
-    // <<<<<<< HEAD
     .catch(function(err) {
       console.error(err);
       res.status(500).json({
         message: `Internal server error. Record not deleted. Error: ${err}`
       });
-      // =======
-      //     .catch(err => {
-      //       res.status(500).json({ message: "Internal server error. Snippet not deleted." });
-      // >>>>>>> master
     });
 });
 

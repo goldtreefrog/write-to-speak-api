@@ -28,9 +28,6 @@ mongoose.Promise = global.Promise;
 
 const app = express();
 
-// //Log all requests
-// // app.all("/", logRequest);
-// app.use(morgan("common"));
 // Log requests to console
 app.use(morgan("dev"));
 
@@ -53,23 +50,8 @@ app.use("/users/", usersRouter);
 app.use("/snippets/", snippetsRouter);
 app.use("/val/auth/", authRouter);
 
-// app.use(bodyParser.json()); // Do we need this here?  It is in the routers.
-
-// // The line of code commented out below is from a tutorial on JWT and Passport I found online: https://blog.slatepeak.com/creating-a-simple-node-express-api-authentication-system-with-passport-and-jwt/
-// // I may not need it.
-// // "When you submit form data with a POST request, that form data can be encoded in many ways. The default type for HTML forms is application/x-www-urlencoded, but you can also submit data as JSON or any other arbitrary format.
-// // "bodyParser.urlencoded() provides middleware for automatically parsing forms with the content-type application/x-www-urlencoded and storing the result as a dictionary (object) in req.body. The body-parser module also provides middleware for parsing JSON, plain text, or just returning a raw Buffer object for you to deal with as needed."
-// // from https://www.reddit.com/r/learnprogramming/comments/2qr8om/nodejs_why_do_we_need_body_parser_urlencoded_in/
 app.use(bodyParser.urlencoded({ extended: false }));
 
-// // initialize passport for use - WHY?
-// app.use(passport.initialize());
-
-// const jwtAuth = passport.authenticate("jwt", { session: false });
-
-// closeServer needs access to a server object, but that only
-// gets created when `runServer` runs, so we declare `server` here
-// and then assign a value to it in run
 let server;
 
 // this function connects to our database, then starts the server

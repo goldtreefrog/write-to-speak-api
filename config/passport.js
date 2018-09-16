@@ -27,4 +27,4 @@ const passportConfig = function(passport) {
 
 exports.PASSPORT_CONFIG = passportConfig;
 exports.JWT_SECRET = jwtSecret;
-exports.JWT_EXPIRY = 300; // "7d";
+exports.JWT_EXPIRY = "1d";
