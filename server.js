@@ -1,22 +1,45 @@
 "use strict";
 
 // Setup
+require("dotenv").config();
 const express = require("express");
-const bodyParser = require("body-parser");
+const bodyParser = require("body-parser"); // Use in routers.
 const mongoose = require("mongoose");
+const morgan = require("morgan");
+const passport = require("passport");
 const cors = require("cors");
-const { DATABASE_URL, PORT, CLIENT_ORIGIN } = require("./config");
-const logRequest = require("./log-request"); // Log requests
+const {
+  DATABASE_URL,
+  PORT,
+  PASSPORT_CONFIG,
+  CLIENT_ORIGIN
+} = require("./config");
 const usersRouter = require("./router/usersRouter");
 const snippetsRouter = require("./router/snippetsRouter");
+const {
+  router: authRouter,
+  localStrategy,
+  jwtStrategy,
+  jwtAuth
+} = require("./auth");
 
 // Make Mongoose use ES6 promises rather than Mongoose's own
 mongoose.Promise = global.Promise;
 
 const app = express();
 
-// Log all requests
-app.all("/", logRequest);
+// Log requests to console
+app.use(morgan("dev"));
+
+// cors
+app.use(
+  cors({
+    origin: CLIENT_ORIGIN
+  })
+);
+
+passport.use(localStrategy);
+passport.use(jwtStrategy);
 
 app.use(
   cors({
@@ -25,11 +48,10 @@ app.use(
 );
 app.use("/users/", usersRouter);
 app.use("/snippets/", snippetsRouter);
-app.use(bodyParser.json());
+app.use("/val/auth/", authRouter);
 
-// closeServer needs access to a server object, but that only
-// gets created when `runServer` runs, so we declare `server` here
-// and then assign a value to it in run
+app.use(bodyParser.urlencoded({ extended: false }));
+
 let server;
 
 // this function connects to our database, then starts the server
@@ -45,7 +67,9 @@ function runServer(databaseUrl, port = PORT) {
           let now = new Date();
           server = app
             .listen(port, () => {
-              console.log(`Your gorgeous app is listening on port ${port} on ${now}`);
+              console.log(
+                `Your gorgeous app is listening on port ${port} on ${now}`
+              );
               resolve();
             })
             .on("error", err => {
@@ -56,23 +80,6 @@ function runServer(databaseUrl, port = PORT) {
           return reject(err);
         }
       );
-
-    // err => {
-    //   console.log("err ===", err);
-    //   if (err) {
-    //     return reject(err);
-    //   }
-    //   let now = new Date();
-    //   server = app
-    //     .listen(port, () => {
-    //       console.log(`Your gorgeous app is listening on port ${port} on ${now}`);
-    //       resolve();
-    //     })
-    //     .on("error", err => {
-    //       reject(err);
-    //     });
-    // }
-    // );
   });
 }
 

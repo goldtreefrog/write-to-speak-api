@@ -2,11 +2,11 @@
 
 const express = require("express");
 const router = express.Router();
+const jwt = require("jsonwebtoken");
+const { router: authRouter, jwtStrategy, jwtAuth } = require("./../auth");
 const mongoose = require("mongoose");
-
 const bodyParser = require("body-parser");
 const jsonParser = bodyParser.json();
-
 const { RegisteredUser } = require("./../models/user");
 const { Snippet } = require("./../models/snippetSchema");
 
@@ -44,8 +44,10 @@ function checkForBadData(body) {
   return message;
 }
 
+router.use(jsonParser);
+
 // Get snippets for all owners (something only administrators should be able to do...)
-router.get("/all", jsonParser, (req, res) => {
+router.get("/all", jwtAuth, (req, res) => {
   let totalSnippets = 0;
   RegisteredUser.find({}).then(users => {
     const filteredUsers = users.filter(user => {
@@ -60,8 +62,8 @@ router.get("/all", jsonParser, (req, res) => {
 });
 
 // Get snippets for one owner
-router.get("/owner/:owner", jsonParser, (req, res) => {
-  RegisteredUser.findById(req.params.owner).then(user => {
+router.get("/owner", jwtAuth, (req, res) => {
+  RegisteredUser.findById(req.body._id).then(user => {
     if (!user) {
       return res.status(404).send("Owner does not exist in our system");
     }
@@ -73,18 +75,30 @@ router.get("/owner/:owner", jsonParser, (req, res) => {
 });
 
 // Create a snippet (entry in subdocument array) for existing user
-router.put("/add-snippet", jsonParser, (req, res) => {
+router.put("/add-snippet", jwtAuth, (req, res) => {
   let message = checkForBadData(req.body);
   if (!(message === "")) {
     return res.status(400).json({ message });
   }
 
+  // Future: Ideally should add a check to make sure the identical snippet (same category too) does not already exist.
   let { userId, category, snippetOrder, snippetText } = req.body;
   RegisteredUser.findById(mongoose.Types.ObjectId(req.body.userId))
     .then(user => {
+      // If user logout is later than login, user needs to log in again and cannot add this snippet until that happens.
+      if (user.lastLogin < user.lastLogout) {
+        return res.status(401).json({ message: "Please sign in again." });
+      }
+
       let snippets = user.snippets;
-      snippets.push({ category: req.body.category, snippetText: req.body.snippetText, snippetOrder: req.body.snippetOrder });
-      return RegisteredUser.findByIdAndUpdate(req.body.userId, { snippets: snippets });
+      snippets.push({
+        category: req.body.category,
+        snippetText: req.body.snippetText,
+        snippetOrder: req.body.snippetOrder
+      });
+      return RegisteredUser.findByIdAndUpdate(req.body.userId, {
+        snippets: snippets
+      });
     })
     .then(user => {
       return res.status(204).end();
@@ -95,6 +109,11 @@ router.put("/update-snippet", jsonParser, (req, res) => {
   let message = "";
   RegisteredUser.findById(req.body.userId)
     .then(user => {
+      // If user logout is later than login, user needs to log in again and cannot update this snippet until that happens.
+      if (user.lastLogin < user.lastLogout) {
+        return res.status(401).json({ message: "Please sign in again." });
+      }
+
       const snippet = user.snippets.id(req.body.snippetId);
       snippet.set(req.body.snippet);
       return user.save();
@@ -112,14 +131,22 @@ router.put("/update-snippet", jsonParser, (req, res) => {
 router.put("/delete-snippet", jsonParser, (req, res) => {
   RegisteredUser.findById(req.body.userId)
     .then(user => {
+      // If user logout is later than login, user needs to log in again and cannot update this snippet until that happens.
+      if (user.lastLogin < user.lastLogout) {
+        return res.status(401).json({ message: "Please sign in again." });
+      }
+
       user.snippets.pull(req.body.snippetId);
       user.save();
     })
     .then(function() {
       res.status(204).end();
     })
-    .catch(err => {
-      res.status(500).json({ message: "Internal server error. Snippet not deleted." });
+    .catch(function(err) {
+      console.error(err);
+      res.status(500).json({
+        message: `Internal server error. Record not deleted. Error: ${err}`
+      });
     });
 });
 

@@ -4,81 +4,24 @@ const chai = require("chai");
 const chaiHttp = require("chai-http");
 const faker = require("faker");
 const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
 const { RegisteredUser } = require("./../models/user.js");
 const { app, runServer, closeServer } = require("../server");
 const { TEST_DATABASE_URL } = require("../config");
+const { tearDownDb, seedData } = require("./utils/manage-database.js");
 
 // make the expect syntax available throughout this module
 const expect = chai.expect;
 
 chai.use(chaiHttp);
 
-function generateRandomNumber(lowN, highN) {
-  // Math.random() produces a random number from 0 to 1 (but excluding 1).
-  // Mutliply that by the difference from low to high.
-  // So far you have the right distance between low and high but you are starting at 0.
-  // Add the low number to that so you start from the low number instead of 0.
-  // Math.ceil() rounds up so you only have integers. (.floor() rounds down/truncates)
-  return Math.ceil(Math.random() * (highN - lowN) + lowN);
-}
-
-// put randomish documents in db for tests.
-// use the Faker library to automatically generate placeholder values
-function seedSnippetData() {
-  let seedData = [];
-  // The first user has no snippets because I need to test that too.
-  let users = [
-    {
-      firstName: faker.name.firstName(),
-      lastName: faker.name.lastName(),
-      email: faker.internet.email(),
-      password: faker.internet.password(),
-      snippets: seedData,
-      createdAt: "",
-      updatedAt: ""
-    }
-  ];
-  // Add more users and give them some snippets
-  let maxSnippets;
-  for (let i = 0; i < 4; i++) {
-    maxSnippets = generateRandomNumber(0, 6);
-    seedData = [];
-    for (let j = 0; j < maxSnippets; j++) {
-      seedData.push(generateSnippetData());
-    }
-    users.push({
-      firstName: faker.name.firstName(),
-      lastName: faker.name.lastName(),
-      email: faker.internet.email(),
-      password: faker.internet.password(),
-      snippets: seedData,
-      createdAt: "",
-      updatedAt: ""
-    });
-  }
-  // this will return a promise
-  return RegisteredUser.insertMany(users);
-}
-
-// generate an object representing a registered snippet.
-// can be used to generate seed data for db or request.body data
-function generateSnippetData() {
-  return {
-    category: faker.hacker.noun(),
-    snippetText: faker.lorem.text(),
-    snippetOrder: faker.random.number()
-  };
-}
-
-// Deletes test database.
-// called in `afterEach` block below to ensure data from one test is gone
-// before the next test.
-function tearDownDb() {
-  console.warn("Deleting database");
-  return mongoose.connection.dropDatabase();
-}
-
 describe("Write to Speak API resource", function() {
+  // We need to keep track of some couple of user information so we can log one in and do various tests; otherwise tests will fail with "401 - Unauthorized."
+  let rec = []; // User records with unhashed passwords and no create/update values
+  const makeUsers = []; // User records with hashed passwords
+  let userId; //   UserId that goes with the login token
+  let token; //    Value of authToken returned when log user in
+
   // Each hook function returns a promise (otherwise we'd need to call a `done` callback).
   // `runServer`, `seedSnippetData` and `tearDownDb` each return a promise,
   // so we return the value returned by these function calls.
@@ -88,10 +31,94 @@ describe("Write to Speak API resource", function() {
     });
   });
 
-  beforeEach(function() {
-    return seedSnippetData().catch(err => {
-      console.log("Inside beforeEach, err from seedSnippetData(): ", err);
-    });
+  beforeEach(function(done) {
+    rec = [
+      {
+        firstName: faker.name.firstName(),
+        lastName: faker.name.lastName(),
+        email: faker.internet.email(),
+        password: "passwordnbr1",
+        snippets: [
+          {
+            snippetText: faker.lorem.text(),
+            category: faker.lorem.word(),
+            snippetOrder: faker.random.number()
+          },
+          {
+            snippetText: faker.lorem.text(),
+            category: faker.lorem.word(),
+            snippetOrder: faker.random.number()
+          },
+          {
+            snippetText: faker.lorem.text(),
+            category: faker.lorem.word(),
+            snippetOrder: faker.random.number()
+          }
+        ],
+        createdAt: "",
+        updatedAt: ""
+      },
+      {
+        firstName: faker.name.firstName(),
+        lastName: faker.name.lastName(),
+        email: faker.internet.email(),
+        password: "passwordnbr2",
+        snippets: [
+          {
+            snippetText: "I love you",
+            category: "general",
+            snippetOrder: 3
+          },
+          {
+            snippetText: "because I want to",
+            category: "general",
+            snippetOrder: 2
+          }
+        ],
+        createdAt: "",
+        updatedAt: ""
+      },
+      {
+        firstName: faker.name.firstName(),
+        lastName: faker.name.lastName(),
+        email: faker.internet.email(),
+        password: "passwordnbr2",
+        snippets: [], // Snippet-less user for certain tests
+        createdAt: "",
+        updatedAt: ""
+      }
+    ];
+
+    bcrypt
+      .hash(rec[0].password, 12)
+      .then(hash => {
+        makeUsers.push(
+          Object.assign({}, rec[0], {
+            password: hash
+          })
+        );
+      })
+      .then(() => {
+        bcrypt.hash(rec[1].password, 12).then(hash => {
+          makeUsers.push(
+            Object.assign({}, rec[1], {
+              password: hash
+            })
+          );
+          return RegisteredUser.insertMany(makeUsers).then(users => {
+            userId = users[1]._id;
+            chai
+              .request(app)
+              .post("/val/auth/login")
+              .send({ email: rec[1].email, password: rec[1].password })
+              // Logged in. Get token to pass to tests
+              .then(res => {
+                token = res.body.authToken;
+                done();
+              });
+          });
+        });
+      });
   });
 
   afterEach(function() {
@@ -108,62 +135,41 @@ describe("Write to Speak API resource", function() {
   // Note the way done() is used. Thinkful suggested 'return chai...' so you wouldn't have to call done(), but I concluded the weird 404 errors I got on some tests ONLY when running all tests together was due to the tests running asynchronously. The steps within a given test would run in order, but several tests would run at once, so one test would cause the database to be dropped when it finished while other tests were still running. Not good. Works better with done() inside a final .then() - so far...
   describe("GET endpoint - retrieve Snippets", function() {
     it("should retrieve all snippets for all owners who have snippets when no owner specified", function(done) {
+      // Get snippets for everyone. Eventually I may rewrite this to allow only administrators to retrieve all snippets, but I might change my mind and allow people to see - and search for - anonymous snippets (so I would have to remove the user info) or perhaps snippets flagged by owners as sharable (with owner credits?), so they can copy them, if I can think of a good use case. If picture symbols were attached, I definitely could...
       chai
         .request(app)
         .get("/snippets/all")
-        .then(function(res) {
+        .set("Authorization", `Bearer ${token}`)
+        .then(res => {
           expect(res).to.have.status(200);
-          expect(res.body.usersWithSnippets).to.have.length.gt(0);
-          res.body.usersWithSnippets.map(user => {
-            // Returned version of user should be serialized with only select fields
-            expect(user.snippetCount).to.not.be.null;
-            expect(user.snippetCount).to.exist;
-            // Since only want users with snippets...
-            expect(user.snippetCount).to.be.at.least(1);
-            expect(user.snippets.length).to.equal(user.snippetCount);
-            expect(user.firstName).to.exist;
-            expect(user.lastName).to.exist;
-            // Do not return passwords
-            expect(user.password).to.not.exist;
-            expect(user.email).to.exist;
-          });
-        })
-        .then(() => {
+          expect(res.body.totalSnippets).to.be.at.least(2);
+          expect(res.body.usersWithSnippets).to.have.length(2);
+          expect(res.body.usersWithSnippets[0].snippets).to.have.length(3);
+          expect(res.body.usersWithSnippets[1].snippets).to.have.length(2);
           done();
         });
     });
 
-    // Works but you need to test it for the first user too, as he/she has no snippets
     it("should retrieve all Snippets for a given owner", function(done) {
-      RegisteredUser.find({})
-        .limit(2)
-        .then(users => {
-          let i;
-          for (i = 0; i < 2; i++) {
-            if (users[i].snippetCount && users[i].snippetCount > 0) {
-              return users[i];
-            }
-          }
-        })
-        .then(user => {
-          chai
-            .request(app)
-            .get(`/snippets/owner/${user._id}`)
-            .then(function(res) {
-              expect(res).to.have.status(200);
-              expect(res.body).to.have.length.of.at.least(1);
-            })
-            .then(() => {
-              done();
-            });
+      // We saved a specific user ID ("userId") in BeforeEach so that we can check to be sure what the test retrieves is from the SAME user.
+      chai
+        .request(app)
+        .get("/snippets/owner")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ _id: userId })
+        .then(res => {
+          expect(res.body).to.have.length(2);
+          expect(res.body[0].snippetText).to.equal("I love you");
+          done();
         });
     });
 
     it("should not retrieve any snippets for an owner that does not exist", function(done) {
-      let owner = mongoose.Types.ObjectId("123456789012");
       chai
         .request(app)
-        .get(`/snippets/owner/${owner}`)
+        .get(`/snippets/owner/`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ _id: "123456789012" })
         .then(function(res) {
           expect(res).to.have.status(404);
         })
@@ -180,6 +186,7 @@ describe("Write to Speak API resource", function() {
         snippetText: faker.lorem.text(),
         snippetOrder: faker.random.number(1000).toString()
       };
+
       // Find an existing user to which we will add a snippet
       RegisteredUser.findOne({}).then(user => {
         let originalSnippetsLength = user.snippets.length;
@@ -189,6 +196,7 @@ describe("Write to Speak API resource", function() {
           .request(app)
           .put("/snippets/add-snippet")
           .send(sendSnippet)
+          .set("Authorization", `Bearer ${token}`)
           .then(res => {
             expect(res).to.have.status(204);
             return sendSnippet.userId;
@@ -222,6 +230,7 @@ describe("Write to Speak API resource", function() {
           .request(app)
           .put("/snippets/add-snippet")
           .send(sendSnippet)
+          .set("Authorization", `Bearer ${token}`)
           .then(res => {
             expect(res).to.have.status(400);
             expect(res.body.message.toLowerCase()).to.include("required field");
@@ -270,6 +279,7 @@ describe("Write to Speak API resource", function() {
             .request(app)
             .put("/snippets/update-snippet")
             .send(objSend)
+            .set("Authorization", `Bearer ${token}`)
             .then(res => {
               expect(res).to.have.status(200);
 
@@ -316,15 +326,22 @@ describe("Write to Speak API resource", function() {
               .request(app)
               .put("/snippets/delete-snippet")
               .send(objSend)
+              .set("Authorization", `Bearer ${token}`)
               .then(res => {
                 expect(res).to.have.status(204); // No content
               })
               .then(() => {
                 RegisteredUser.findById(objSend.userId)
                   .then(user => {
-                    expect(user.snippets.length).to.be.equal(origSnippets.length - 1);
-                    expect(JSON.stringify(user.snippets[0])).to.equal(JSON.stringify(origSnippets[0]));
-                    expect(JSON.stringify(user.snippets[1])).not.to.equal(JSON.stringify(origSnippets[1]));
+                    expect(user.snippets.length).to.be.equal(
+                      origSnippets.length - 1
+                    );
+                    expect(JSON.stringify(user.snippets[0])).to.equal(
+                      JSON.stringify(origSnippets[0])
+                    );
+                    expect(JSON.stringify(user.snippets[1])).not.to.equal(
+                      JSON.stringify(origSnippets[1])
+                    );
                   })
                   .then(() => done());
               });
@@ -344,9 +361,22 @@ describe("Write to Speak API resource", function() {
         snippetText: faker.lorem.text(),
         snippetOrder: faker.random.number(),
         snippets: [
-          { category: "virtualTest", snippetText: "supercalifragilisticexpialidocis", snippetOrder: "1" },
-          { category: "virtualTest", snippetText: "Just a spoon full of sugar makes the medicine go down", snippetOrder: "2" },
-          { category: "virtualTest", snippetText: "feed the birds", snippetOrder: "3" }
+          {
+            category: "virtualTest",
+            snippetText: "supercalifragilisticexpialidocis",
+            snippetOrder: "1"
+          },
+          {
+            category: "virtualTest",
+            snippetText:
+              "Just a spoon full of sugar makes the medicine go down",
+            snippetOrder: "2"
+          },
+          {
+            category: "virtualTest",
+            snippetText: "feed the birds",
+            snippetOrder: "3"
+          }
         ],
         createdAt: "",
         updatedAt: ""
@@ -364,7 +394,10 @@ describe("Write to Speak API resource", function() {
       RegisteredUser.findOne({})
         .then(user => {
           for (let i = 0; i < parseInt(user.snippetCount, 10); i++) {
-            expect(user.maxOrder).to.be.at.least(parseInt(user.snippets[i].snippetOrder), 10);
+            expect(user.maxOrder).to.be.at.least(
+              parseInt(user.snippets[i].snippetOrder),
+              10
+            );
           }
         })
         .then(() => {

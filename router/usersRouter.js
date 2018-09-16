@@ -48,7 +48,7 @@ router.post("/add-user", jsonParser, (req, res) => {
 
   let { firstName = "", lastName = "", email, password } = req.body;
 
-  return RegisteredUser.find({ email })
+  return RegisteredUser.findOne({ email })
     .countDocuments()
     .then(count => {
       if (count > 0) {

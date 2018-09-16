@@ -64,7 +64,14 @@ describe("Write to Speak API resource", function() {
         .then(function(res) {
           expect(res).to.have.status(201);
           expect(res.body).to.be.a("object");
-          expect(res.body).to.include.keys("_id", "firstName", "lastName", "email", "createdAt", "updatedAt");
+          expect(res.body).to.include.keys(
+            "_id",
+            "firstName",
+            "lastName",
+            "email",
+            "createdAt",
+            "updatedAt"
+          );
           return res;
         })
         .then(res => {
@@ -85,7 +92,9 @@ describe("Write to Speak API resource", function() {
           expect(registeredUser.firstName).to.equal(sendUser.firstName);
           expect(registeredUser.lastName).to.equal(sendUser.lastName);
           expect(registeredUser.email).to.equal(sendUser.email);
-          expect(registeredUser.password.length).to.be.gt(sendUser.password.length);
+          expect(registeredUser.password.length).to.be.gt(
+            sendUser.password.length
+          );
           let match = registeredUser.validatePassword(sendUser.password);
           return match;
         })
