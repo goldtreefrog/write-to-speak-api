@@ -2,6 +2,9 @@
   "name": "write-to-speak-api",
   "version": "0.1.0",
   "description": "Handles API requests for Write-to-Speak Demo App",
+  "engines": {
+    "node": "8.11.4"
+  },
   "main": "server.js",
   "scripts": {
     "test": "mocha --recursive --timeout 10000 --exit",
