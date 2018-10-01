@@ -83,8 +83,8 @@ router.put("/add-snippet", jwtAuth, (req, res) => {
 
   // Future: Ideally should add a check to make sure the identical snippet (same category too) does not already exist.
   let { userId, category, snippetOrder, snippetText } = req.body;
-  RegisteredUser.findById(mongoose.Types.ObjectId(req.body.userId))
-    .then(user => {
+  RegisteredUser.findById(mongoose.Types.ObjectId(req.body.userId)).then(
+    user => {
       // If user logout is later than login, user needs to log in again and cannot add this snippet until that happens.
       if (user.lastLogin < user.lastLogout) {
         return res.status(401).json({ message: "Please sign in again." });
@@ -96,13 +96,20 @@ router.put("/add-snippet", jwtAuth, (req, res) => {
         snippetText: req.body.snippetText,
         snippetOrder: req.body.snippetOrder
       });
-      return RegisteredUser.findByIdAndUpdate(req.body.userId, {
-        snippets: snippets
-      });
-    })
-    .then(user => {
-      return res.status(204).end();
-    });
+      return (
+        user
+          .save()
+
+          // return RegisteredUser.findByIdAndUpdate(req.body.userId, {
+          //   snippets: snippets
+          // })
+          .then(user => {
+            return res.status(200).json(user.snippets);
+            // return res.status(204).end();
+          })
+      );
+    }
+  );
 });
 
 router.put("/update-snippet", jsonParser, (req, res) => {
@@ -114,8 +121,19 @@ router.put("/update-snippet", jsonParser, (req, res) => {
         return res.status(401).json({ message: "Please sign in again." });
       }
 
-      const snippet = user.snippets.id(req.body.snippetId);
-      snippet.set(req.body.snippet);
+      const snippetToUpdate = user.snippets.id(req.body.snippet.snippetId);
+      let category = req.body.snippet.category || snippetToUpdate.category;
+      let snippetText =
+        req.body.snippet.snippetText || snippetToUpdate.snippetText;
+      let snippetOrder =
+        req.body.snippet.snippetOrder || snippetToUpdate.snippetOrder;
+      let snippet = {
+        _id: req.body.snippet.snippetId,
+        category,
+        snippetText,
+        snippetOrder
+      };
+      snippetToUpdate.set(snippet);
       return user.save();
     })
     .then(user => {
