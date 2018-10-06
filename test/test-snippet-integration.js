@@ -195,10 +195,10 @@ describe("Write to Speak API resource", function() {
         chai
           .request(app)
           .put("/snippets/add-snippet")
-          .send(sendSnippet)
           .set("Authorization", `Bearer ${token}`)
+          .send(sendSnippet)
           .then(res => {
-            expect(res).to.have.status(204);
+            expect(res).to.have.status(200);
             return sendSnippet.userId;
           })
           .then(id => {
@@ -229,8 +229,8 @@ describe("Write to Speak API resource", function() {
         chai
           .request(app)
           .put("/snippets/add-snippet")
-          .send(sendSnippet)
           .set("Authorization", `Bearer ${token}`)
+          .send(sendSnippet)
           .then(res => {
             expect(res).to.have.status(400);
             expect(res.body.message.toLowerCase()).to.include("required field");
@@ -272,14 +272,15 @@ describe("Write to Speak API resource", function() {
         })
         .then(user => {
           objSend.userId = user._id;
-          objSend.snippetId = user.snippets[0]._id;
           updateSnippetTo.category = user.snippets[0].category;
           objSend.snippet = updateSnippetTo;
+          objSend.snippet.snippetId = user.snippets[0]._id;
+
           chai
             .request(app)
             .put("/snippets/update-snippet")
-            .send(objSend)
             .set("Authorization", `Bearer ${token}`)
+            .send(objSend)
             .then(res => {
               expect(res).to.have.status(200);
 
