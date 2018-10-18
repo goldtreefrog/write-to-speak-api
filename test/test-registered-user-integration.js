@@ -31,13 +31,6 @@ describe("Write to Speak API resource", function() {
     });
   });
 
-  // beforeEach(function() {
-  // Do not use unless you actually want to display masses of user data in the API, which I do not.
-  //   return seedRegisteredUserData().catch(err => {
-  //     console.log(err);
-  //   });
-  // });
-
   afterEach(function() {
     return tearDownDb().catch(err => {
       console.log(err);

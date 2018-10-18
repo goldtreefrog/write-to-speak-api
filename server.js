@@ -28,15 +28,15 @@ mongoose.Promise = global.Promise;
 
 const app = express();
 
-// Log requests to console
-app.use(morgan("dev"));
-
 // cors
 app.use(
   cors({
     origin: CLIENT_ORIGIN
   })
 );
+
+// Log requests to console
+app.use(morgan("dev"));
 
 passport.use(localStrategy);
 passport.use(jwtStrategy);

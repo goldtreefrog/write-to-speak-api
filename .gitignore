@@ -3,9 +3,6 @@
 # environment variables (because they are supposed to be secret)
 .env
 
-# config file (because you do not need to know where my database is)
-config.js
-
 # dependencies
 /node_modules
 
